@@ -27,46 +27,48 @@ export async function GET(request: NextRequest) {
     const mender = searchParams.get('mender');
     const kebele = searchParams.get('kebele');
 
-    // Build query parts safely
-    const conditions: string[] = ['is_deleted = FALSE'];
-    const params: any[] = [];
-    let paramIndex = 1;
-
-    // Mender staff can only see their assigned mender
-    if (user.role === 'MENDER_STAFF' && user.assigned_mender) {
-      conditions.push(`mender = $${paramIndex++}`);
-      params.push(user.assigned_mender);
-    }
-
-    // Search filters
+    // ✅ SIMPLE APPROACH: Build query based on filters using conditional logic
+    let result;
+    
     if (query) {
-      conditions.push(`(name ILIKE $${paramIndex} OR house_number ILIKE $${paramIndex + 1})`);
-      params.push(`%${query}%`, `%${query}%`);
-      paramIndex += 2;
+      // Search by name or house number
+      result = await sql`
+        SELECT id, name, father_name, house_number, mender, kebele, 
+               phone_encrypted, email, latitude, longitude, file_path, 
+               file_name, notes, created_at, updated_at
+        FROM householders
+        WHERE is_deleted = FALSE 
+          AND (name ILIKE ${'%' + query + '%'} OR house_number ILIKE ${'%' + query + '%'})
+          ${mender ? sql`AND mender = ${mender}` : sql``}
+          ${kebele ? sql`AND kebele = ${kebele}` : sql``}
+          ${user.role === 'MENDER_STAFF' && user.assigned_mender ? sql`AND mender = ${user.assigned_mender}` : sql``}
+        ORDER BY created_at DESC
+      `;
+    } else if (mender || kebele || user.role === 'MENDER_STAFF') {
+      // Filter by mender/kebele or staff restriction
+      result = await sql`
+        SELECT id, name, father_name, house_number, mender, kebele, 
+               phone_encrypted, email, latitude, longitude, file_path, 
+               file_name, notes, created_at, updated_at
+        FROM householders
+        WHERE is_deleted = FALSE 
+          ${mender ? sql`AND mender = ${mender}` : sql``}
+          ${kebele ? sql`AND kebele = ${kebele}` : sql``}
+          ${user.role === 'MENDER_STAFF' && user.assigned_mender ? sql`AND mender = ${user.assigned_mender}` : sql``}
+        ORDER BY created_at DESC
+      `;
+    } else {
+      // No filters - return all (respecting staff restrictions)
+      result = await sql`
+        SELECT id, name, father_name, house_number, mender, kebele, 
+               phone_encrypted, email, latitude, longitude, file_path, 
+               file_name, notes, created_at, updated_at
+        FROM householders
+        WHERE is_deleted = FALSE 
+          ${user.role === 'MENDER_STAFF' && user.assigned_mender ? sql`AND mender = ${user.assigned_mender}` : sql``}
+        ORDER BY created_at DESC
+      `;
     }
-
-    if (mender) {
-      conditions.push(`mender = $${paramIndex++}`);
-      params.push(mender);
-    }
-
-    if (kebele) {
-      conditions.push(`kebele = $${paramIndex++}`);
-      params.push(kebele);
-    }
-
-    const whereClause = conditions.join(' AND ');
-
-    // ✅ FIX: Build query using template literal with sql tag
-    // Neon supports dynamic queries via template literals, not .raw()
-    const result = await sql`
-      SELECT id, name, father_name, house_number, mender, kebele, 
-             phone_encrypted, email, latitude, longitude, file_path, 
-             file_name, notes, created_at, updated_at
-      FROM householders
-      WHERE ${sql.join(conditions.map((c, i) => sql`${sql.raw(c)}`), sql` AND `)}
-      ORDER BY created_at DESC
-    `;
 
     // Decrypt phone numbers for authorized users
     const householders = result.map((h: any) => ({
@@ -149,7 +151,7 @@ export async function POST(request: NextRequest) {
       filePath = `/uploads/${Date.now()}-${file.name}`;
     }
 
-    // ✅ FIX: Use proper parameterized query without .raw()
+    // Insert new record
     const result = await sql`
       INSERT INTO householders (
         name, father_name, house_number, mender, kebele, 
@@ -176,7 +178,7 @@ export async function POST(request: NextRequest) {
       userAgent
     });
 
-    return NextResponse.json({ success: true, data: result[0] });
+    return NextResponse.json({ success: true,  result[0] });
   } catch (error) {
     console.error('Error creating householder:', error);
     return NextResponse.json({ error: 'Failed to create record' }, { status: 500 });
