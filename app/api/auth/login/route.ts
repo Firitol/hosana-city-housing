@@ -3,9 +3,9 @@ import { sql } from '@/lib/db';
 import { verifyPassword, generateToken, checkLoginAttempts, recordLoginAttempt } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
-  // ✅ FIX: Handle potentially undefined ip() return value
+  // ✅ FIX: request.ip is a property, not a function - no parentheses!
   const forwarded = request.headers.get('x-forwarded-for');
-  const ip = typeof request.ip === 'function' ? request.ip() : undefined;
+  const ip = request.ip;  // ← Property access, NOT function call
   const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
 
   try {
