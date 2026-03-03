@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import en from '@/locales/en.json';
 import am from '@/locales/am.json';
 
@@ -20,7 +20,11 @@ const translations: Record<Locale, any> = {
   am
 };
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
+interface I18nProviderProps {
+  children: ReactNode;
+}
+
+export function I18nProvider({ children }: I18nProviderProps) {
   const [locale, setLocale] = useState<Locale>('en');
 
   useEffect(() => {
@@ -35,7 +39,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     let value: any = translations[locale];
     
     for (const k of keys) {
-      value = value?.[k];
+      if (value && typeof value === 'object') {
+        value = value[k];
+      } else {
+        return key;
+      }
     }
     
     return value || key;
