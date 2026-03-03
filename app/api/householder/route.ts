@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
-import { encrypt, decrypt } from '@/lib/encryption';
+import { encrypt, decrypt } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
-  const clientIp = request.headers.get('x-forwarded-for') || request.ip() || 'unknown';
+  // ✅ FIX: request.ip is a property, NOT a function - no parentheses!
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = request.ip;  // ← Property access, no ()
+  const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
+  
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
   try {
@@ -87,7 +91,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const clientIp = request.headers.get('x-forwarded-for') || request.ip() || 'unknown';
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = request.ip;
+  const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
   try {
@@ -130,14 +136,12 @@ export async function POST(request: NextRequest) {
     // Encrypt phone number
     const phoneEncrypted = phone ? encrypt(phone) : null;
 
-    // Handle file upload (MinIO integration would go here)
+    // Handle file upload (Vercel Blob integration would go here)
     let filePath = '';
     let fileName = '';
     let fileSize = 0;
 
     if (file && file.size > 0) {
-      // In production, upload to MinIO
-      // For now, store metadata
       fileName = file.name;
       fileSize = file.size;
       filePath = `/uploads/${Date.now()}-${file.name}`;
