@@ -6,9 +6,13 @@ import { AuthProvider } from '@/lib/auth-context';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const meta Metadata = {
+// ✅ CORRECT SYNTAX: metadata: Metadata (colon, not space)
+export const metadata: Metadata = {
   title: 'Hosana City Housing System',
   description: 'Government Housing Management System for Hosana City',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -19,7 +23,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/favicon.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#2563eb" />
       </head>
