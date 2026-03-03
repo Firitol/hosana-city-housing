@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  reactStrictMode: true,
   images: {
     domains: ['public.vercel-storage.com'],
     remotePatterns: [
