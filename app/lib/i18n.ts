@@ -5,47 +5,31 @@ import en from '@/locales/en.json';
 import am from '@/locales/am.json';
 
 type Locale = 'en' | 'am';
-type TranslationKey = string;
 
 interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: string) => string;
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
-const translations: Record<Locale, any> = {
-  en,
-  am
-};
+const translations: Record<Locale, any> = { en, am };
 
-interface I18nProviderProps {
-  children: ReactNode;
-}
-
-export function I18nProvider({ children }: I18nProviderProps) {
+export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>('en');
 
   useEffect(() => {
-    const savedLocale = localStorage.getItem('hosana_locale') as Locale;
-    if (savedLocale && ['en', 'am'].includes(savedLocale)) {
-      setLocale(savedLocale);
-    }
+    const saved = localStorage.getItem('hosana_locale') as Locale;
+    if (saved && ['en', 'am'].includes(saved)) setLocale(saved);
   }, []);
 
-  const t = (key: TranslationKey): string => {
+  const t = (key: string): string => {
     const keys = key.split('.');
     let value: any = translations[locale];
-    
     for (const k of keys) {
-      if (value && typeof value === 'object') {
-        value = value[k];
-      } else {
-        return key;
-      }
+      value = value?.[k];
     }
-    
     return value || key;
   };
 
@@ -63,8 +47,6 @@ export function I18nProvider({ children }: I18nProviderProps) {
 
 export function useTranslation() {
   const context = useContext(I18nContext);
-  if (!context) {
-    throw new Error('useTranslation must be used within I18nProvider');
-  }
+  if (!context) throw new Error('useTranslation must be used within I18nProvider');
   return context;
 }
