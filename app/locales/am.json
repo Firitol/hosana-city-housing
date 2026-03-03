@@ -1,0 +1,90 @@
+{
+  "common": {
+    "app_name": "ሆሳና ከተማ የመኖሪያ ቤት አስተዳደር ስርዓት",
+    "loading": "እየጫነ ነው...",
+    "save": "አስቀምጥ",
+    "cancel": "ሰርዝ",
+    "delete": "አጥፋ",
+    "edit": "አስተካክል",
+    "search": "ፈልግ",
+    "export": "አውጣ",
+    "back": "ተመለስ",
+    "next": "ቀጣይ",
+    "yes": "አዎ",
+    "no": "አይ"
+  },
+  "auth": {
+    "login": "ግባ",
+    "logout": "ውጣ",
+    "username": "የተጠቃሚ ስም",
+    "password": "የይለፍ ቃል",
+    "remember_me": "አስታውሰኝ",
+    "forgot_password": "የይለፍ ቃልህን ረስተሃል?",
+    "login_success": "በስኬት ገብተሃል",
+    "login_failed": "ስህተት የተጠቃሚ ስም ወይም የይለፍ ቃል",
+    "account_locked": "ሂሳቡ ጊዜያዊ ተቆልፏል"
+  },
+  "dashboard": {
+    "title": "ዳሽቦርድ",
+    "total_households": "ጠቅላላ ቤተሰቦች",
+    "total_menders": "ጠቅላላ መንደሮች",
+    "total_kebeles": "ጠቅላላ ከበሌዎች",
+    "recent_activity": "የቅርብ ጊዜ እንቅስቃሴ",
+    "quick_actions": "ፈጣን ተግባራት"
+  },
+  "householders": {
+    "title": "የቤተሰብ መረጃ",
+    "add_new": "አዲስ ቤተሰብ አክል",
+    "edit": "የቤተሰብ መረጃ አስተካክል",
+    "name": "ሙሉ ስም",
+    "father_name": "የአባት ስም",
+    "house_number": "የቤት ቁጥር",
+    "mender": "መንደር",
+    "kebele": "ከበሌ",
+    "phone": "ስልክ ቁጥር",
+    "email": "ኢሜይል",
+    "latitude": "ላቲቲዩድ",
+    "longitude": "ሎንጊቲዩድ",
+    "documents": "ሰነዶች",
+    "notes": "ማስታወሻዎች",
+    "search_placeholder": "በስም ወይም በቤት ቁጥር ፈልግ...",
+    "no_records": "ምንም መረጃ አልተገኘም",
+    "created_success": "የቤተሰብ መረጃ በስኬት ተጨምሯል",
+    "updated_success": "የቤተሰብ መረጃ በስኬት ተስተካክሏል",
+    "deleted_success": "የቤተሰብ መረጃ በስኬት ተሰርዟል"
+  },
+  "menders": {
+    "mender_1": "መንደር 1",
+    "mender_2": "መንደር 2",
+    "mender_3": "መንደር 3"
+  },
+  "audit": {
+    "title": "የኦዲት መዝገቦች",
+    "action": "ተግባር",
+    "user": "ተጠቃሚ",
+    "timestamp": "ጊዜ",
+    "ip_address": "የአይፒ አድራሻ",
+    "resource": "መረጃ",
+    "login_success": "የግብየት ስኬት",
+    "login_failed": "የግብየት ስህተት",
+    "search": "ፍለጋ",
+    "create": "ፍጠር",
+    "update": "አዘምን",
+    "delete": "ሰርዝ"
+  },
+  "emergency": {
+    "title": "የአስቸኳይ ሁኔታ",
+    "locate": "በካርታ አሳይ",
+    "urgent": "አስቸኳይ",
+    "call": "ጥራ",
+    "navigate": "አቅጣጫ"
+  },
+  "errors": {
+    "required": "ይህ መስክ አስፈላጊ ነው",
+    "invalid_email": "ስህተት የኢሜይል አድራሻ",
+    "invalid_phone": "ስህተት የስልክ ቁጥር",
+    "server_error": "የሰርቨር ስህተት ተፈጥሯል",
+    "unauthorized": "ፈቃድ የለዎትም",
+    "not_found": "መረጃው አልተገኘም"
+  }
+}

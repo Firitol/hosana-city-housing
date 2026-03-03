@@ -1,0 +1,85 @@
+{
+  "expo": {
+    "name": "Hosana Housing",
+    "slug": "hosana-housing",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2563eb"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "et.gov.hosana.housing",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show emergency householder locations on the map.",
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to show emergency householder locations on the map.",
+        "NSCameraUsageDescription": "This app needs camera access to scan documents and upload photos.",
+        "NSPhotoLibraryUsageDescription": "This app needs photo library access to upload householder documents."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2563eb"
+      },
+      "package": "et.gov.hosana.housing",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Hosana Housing to use your location for emergency mapping."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Hosana Housing to access your camera to upload documents."
+        }
+      ]
+    ],
+    "scheme": "hosana-housing",
+    "webScheme": "hosana-housing",
+    "extra": {
+      "apiUrl": "http://192.168.1.100:3000/api",
+      "appVersion": "1.0.0",
+      "minSupportedVersion": "1.0.0",
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    },
+    "owner": "hosana-city-admin",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/your-project-id-here"
+    }
+  }
+}
