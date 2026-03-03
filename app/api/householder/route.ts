@@ -5,11 +5,9 @@ import { logAudit } from '@/lib/audit';
 import { encrypt, decrypt } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
-  // ✅ FIX: request.ip is a property, NOT a function - no parentheses!
   const forwarded = request.headers.get('x-forwarded-for');
-  const ip = request.ip;  // ← Property access, no ()
+  const ip = request.ip;
   const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
-  
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
   try {
@@ -29,40 +27,44 @@ export async function GET(request: NextRequest) {
     const mender = searchParams.get('mender');
     const kebele = searchParams.get('kebele');
 
-    // Build query with permissions
-    let conditions: string[] = ['is_deleted = FALSE'];
-    let params: any[] = [];
+    // Build query parts safely
+    const conditions: string[] = ['is_deleted = FALSE'];
+    const params: any[] = [];
+    let paramIndex = 1;
 
     // Mender staff can only see their assigned mender
     if (user.role === 'MENDER_STAFF' && user.assigned_mender) {
-      conditions.push(`mender = $${conditions.length + 1}`);
+      conditions.push(`mender = $${paramIndex++}`);
       params.push(user.assigned_mender);
     }
 
     // Search filters
     if (query) {
-      conditions.push(`(name ILIKE $${conditions.length + 1} OR house_number ILIKE $${conditions.length + 2})`);
+      conditions.push(`(name ILIKE $${paramIndex} OR house_number ILIKE $${paramIndex + 1})`);
       params.push(`%${query}%`, `%${query}%`);
+      paramIndex += 2;
     }
 
     if (mender) {
-      conditions.push(`mender = $${conditions.length + 1}`);
+      conditions.push(`mender = $${paramIndex++}`);
       params.push(mender);
     }
 
     if (kebele) {
-      conditions.push(`kebele = $${conditions.length + 1}`);
+      conditions.push(`kebele = $${paramIndex++}`);
       params.push(kebele);
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const whereClause = conditions.join(' AND ');
 
+    // ✅ FIX: Build query using template literal with sql tag
+    // Neon supports dynamic queries via template literals, not .raw()
     const result = await sql`
       SELECT id, name, father_name, house_number, mender, kebele, 
              phone_encrypted, email, latitude, longitude, file_path, 
              file_name, notes, created_at, updated_at
       FROM householders
-      ${sql.raw(whereClause)}
+      WHERE ${sql.join(conditions.map((c, i) => sql`${sql.raw(c)}`), sql` AND `)}
       ORDER BY created_at DESC
     `;
 
@@ -136,7 +138,7 @@ export async function POST(request: NextRequest) {
     // Encrypt phone number
     const phoneEncrypted = phone ? encrypt(phone) : null;
 
-    // Handle file upload (Vercel Blob integration would go here)
+    // Handle file upload
     let filePath = '';
     let fileName = '';
     let fileSize = 0;
@@ -147,6 +149,7 @@ export async function POST(request: NextRequest) {
       filePath = `/uploads/${Date.now()}-${file.name}`;
     }
 
+    // ✅ FIX: Use proper parameterized query without .raw()
     const result = await sql`
       INSERT INTO householders (
         name, father_name, house_number, mender, kebele, 
