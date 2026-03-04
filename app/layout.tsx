@@ -6,13 +6,10 @@ import { AuthProvider } from '@/lib/auth-context';
 
 const inter = Inter({ subsets: ['latin'] });
 
-// ✅ CORRECT SYNTAX: metadata: Metadata (colon, not space)
 export const metadata: Metadata = {
   title: 'Hosana City Housing System',
   description: 'Government Housing Management System for Hosana City',
-  icons: {
-    icon: '/favicon.ico',
-  },
+  icons: { icon: '/favicon.ico' },
 };
 
 export default function RootLayout({
@@ -28,9 +25,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <I18nProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
         </I18nProvider>
       </body>
     </html>
