@@ -1,15 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Image,
-} from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import {
   ArrowLeft,
@@ -22,11 +14,10 @@ import {
   User,
   Home,
   Clipboard,
-} from 'lucide-react-native';
-import { Card } from '@/components/Card';
-import { Button } from '@/components/Button';
+  AlertTriangle,
+} from 'lucide-react';
 
-type Householder = {
+interface Householder {
   id: string;
   name: string;
   father_name?: string;
@@ -42,27 +33,44 @@ type Householder = {
   notes?: string;
   created_at: string;
   updated_at: string;
-};
+}
 
-export default function ProfileScreen() {
-  const params = useLocalSearchParams();
+export default function ProfilePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [householder, setHouseholder] = useState<Householder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (params.id) {
-      fetchProfile();
+    const id = searchParams?.get('id');
+    if (id) {
+      fetchProfile(id);
+    } else {
+      setError('No householder ID provided');
+      setLoading(false);
     }
-  }, [params.id]);
+  }, [searchParams]);
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (id: string) => {
     try {
-      const response = await api.get(`/householders/${params.id}`);
-      setHouseholder(response.data);
-    } catch (error) {
-      console.error('Fetch error:', error);
-      Alert.alert('Error', 'Failed to load profile');
+      const token = localStorage.getItem('hosana_token');
+      const response = await fetch(`/api/householders?id=${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load profile');
+      }
+      
+      const data = await response.json();
+      // If API returns array, take first item
+      setHouseholder(Array.isArray(data) ? data[0] : data);
+    } catch (err: any) {
+      console.error('Fetch error:', err);
+      setError(err.message || 'Failed to load profile');
     } finally {
       setLoading(false);
     }
@@ -70,129 +78,139 @@ export default function ProfileScreen() {
 
   const handleCall = () => {
     if (!householder?.phone) {
-      Alert.alert('No Phone', 'Phone number not available');
+      alert('Phone number not available');
       return;
     }
-    Alert.alert('Call', `Call ${householder.phone}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Call',
-        onPress: () => Linking.openURL(`tel:${householder.phone}`),
-      },
-    ]);
+    window.location.href = `tel:${householder.phone}`;
   };
 
   const handleEmail = () => {
     if (!householder?.email) {
-      Alert.alert('No Email', 'Email address not available');
+      alert('Email address not available');
       return;
     }
-    Linking.openURL(`mailto:${householder.email}`);
+    window.location.href = `mailto:${householder.email}`;
   };
 
   const handleNavigate = () => {
     if (!householder?.latitude || !householder?.longitude) {
-      Alert.alert('No Location', 'GPS coordinates not available');
+      alert('GPS coordinates not available');
       return;
     }
 
     const url = `https://www.google.com/maps?q=${householder.latitude},${householder.longitude}`;
-    Linking.openURL(url);
+    window.open(url, '_blank');
   };
 
   const handleViewDocument = () => {
     if (!householder?.file_path) {
-      Alert.alert('No Document', 'No document uploaded');
+      alert('No document uploaded');
       return;
     }
-    Linking.openURL(householder.file_path);
+    window.open(householder.file_path, '_blank');
   };
 
   const handleEdit = () => {
-    router.push({
-      pathname: '/edit',
-      params: { id: householder?.id },
-    });
+    router.push(`/householders/${householder?.id}/edit`);
   };
 
   const copyToClipboard = (text: string, label: string) => {
-    // In production, use expo-clipboard
-    Alert.alert('Copied', `${label} copied to clipboard`);
+    navigator.clipboard.writeText(text).then(() => {
+      alert(`${label} copied to clipboard`);
+    }).catch(() => {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert(`${label} copied to clipboard`);
+    });
   };
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
-        <ActivityIndicator size="large" color="#2563eb" />
-        <Text className="text-gray-500 mt-4">Loading profile...</Text>
-      </View>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
     );
   }
 
-  if (!householder) {
+  if (error || !householder) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50 px-8">
-        <User color="#d1d5db" size={64} />
-        <Text className="text-gray-400 text-lg mt-4 text-center">
-          Profile not found
-        </Text>
-        <Button onPress={() => router.back()} className="mt-6">
-          Go Back
-        </Button>
-      </View>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg mb-4">{error || 'Profile not found'}</p>
+          <button
+            onClick={() => router.back()}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <View className="bg-blue-600 px-4 py-6">
-        <View className="flex-row items-center mb-4">
-          <TouchableOpacity onPress={() => router.back()}>
-            <ArrowLeft color="white" size={24} />
-          </TouchableOpacity>
-          <Text className="text-white text-xl font-bold ml-4 flex-1 text-center mr-10">
-            Profile Details
-          </Text>
-        </View>
+      <header className="bg-blue-600 px-4 py-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center mb-4">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-blue-700 rounded-lg transition"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-6 h-6 text-white" />
+            </button>
+            <h1 className="text-xl font-bold text-white ml-4 flex-1 text-center">
+              Profile Details
+            </h1>
+            <div className="w-10"></div> {/* Spacer for centering */}
+          </div>
 
-        <View className="items-center">
-          <View className="w-20 h-20 bg-white rounded-full items-center justify-center mb-3">
-            <User color="#2563eb" size={40} />
-          </View>
-          <Text className="text-white text-2xl font-bold">{householder.name}</Text>
-          {householder.father_name && (
-            <Text className="text-white/80 mt-1">{householder.father_name}</Text>
-          )}
-        </View>
-      </View>
+          <div className="text-center">
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
+              <User className="w-10 h-10 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-white">{householder.name}</h2>
+            {householder.father_name && (
+              <p className="text-white/80 mt-1">{householder.father_name}</p>
+            )}
+          </div>
+        </div>
+      </header>
 
-      <ScrollView className="flex-1 px-4 py-6">
+      {/* Content */}
+      <main className="max-w-3xl mx-auto px-4 py-6">
         {/* Emergency Button */}
         {householder.latitude && householder.longitude && (
-          <TouchableOpacity
-            onPress={handleNavigate}
-            className="bg-red-600 rounded-xl p-4 mb-6 flex-row items-center justify-center"
+          <button
+            onClick={handleNavigate}
+            className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl p-4 mb-6 flex items-center justify-center transition"
           >
-            <Navigation color="white" size={24} />
-            <Text className="text-white font-bold text-lg ml-3">
-              EMERGENCY LOCATION
-            </Text>
-          </TouchableOpacity>
+            <AlertTriangle className="w-6 h-6 mr-3" />
+            <span className="font-bold text-lg">EMERGENCY LOCATION</span>
+          </button>
         )}
 
         {/* Personal Information */}
-        <Card className="mb-4">
-          <View className="p-4">
-            <View className="flex-row items-center mb-4">
-              <User color="#2563eb" size={20} />
-              <Text className="text-lg font-bold text-gray-800 ml-2">
-                Personal Information
-              </Text>
-            </View>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4">
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center mb-4">
+              <User className="w-5 h-5 text-blue-600 mr-2" />
+              <h3 className="text-lg font-bold text-gray-800">Personal Information</h3>
+            </div>
 
             <InfoRow
-              icon={<User color="#6b7280" size={18} />}
+              icon={<User className="w-4 h-4 text-gray-500" />}
               label="Full Name"
               value={householder.name}
               onCopy={() => copyToClipboard(householder.name, 'Name')}
@@ -200,7 +218,7 @@ export default function ProfileScreen() {
 
             {householder.father_name && (
               <InfoRow
-                icon={<User color="#6b7280" size={18} />}
+                icon={<User className="w-4 h-4 text-gray-500" />}
                 label="Father's Name"
                 value={householder.father_name}
               />
@@ -208,7 +226,7 @@ export default function ProfileScreen() {
 
             {householder.phone && (
               <InfoRow
-                icon={<Phone color="#6b7280" size={18} />}
+                icon={<Phone className="w-4 h-4 text-gray-500" />}
                 label="Phone Number"
                 value={householder.phone}
                 actionText="Call"
@@ -219,119 +237,110 @@ export default function ProfileScreen() {
 
             {householder.email && (
               <InfoRow
-                icon={<Mail color="#6b7280" size={18} />}
+                icon={<Mail className="w-4 h-4 text-gray-500" />}
                 label="Email"
                 value={householder.email}
                 actionText="Email"
                 onAction={handleEmail}
               />
             )}
-          </View>
-        </Card>
+          </div>
+        </div>
 
         {/* Address Information */}
-        <Card className="mb-4">
-          <View className="p-4">
-            <View className="flex-row items-center mb-4">
-              <Home color="#2563eb" size={20} />
-              <Text className="text-lg font-bold text-gray-800 ml-2">
-                Address Information
-              </Text>
-            </View>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4">
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center mb-4">
+              <Home className="w-5 h-5 text-blue-600 mr-2" />
+              <h3 className="text-lg font-bold text-gray-800">Address Information</h3>
+            </div>
 
             <InfoRow
-              icon={<MapPin color="#6b7280" size={18} />}
+              icon={<MapPin className="w-4 h-4 text-gray-500" />}
               label="House Number"
               value={householder.house_number}
               onCopy={() => copyToClipboard(householder.house_number, 'House Number')}
             />
 
             <InfoRow
-              icon={<MapPin color="#6b7280" size={18} />}
+              icon={<MapPin className="w-4 h-4 text-gray-500" />}
               label="Mender"
               value={householder.mender}
             />
 
             <InfoRow
-              icon={<MapPin color="#6b7280" size={18} />}
+              icon={<MapPin className="w-4 h-4 text-gray-500" />}
               label="Kebele"
               value={householder.kebele}
             />
 
             {householder.latitude && householder.longitude && (
               <InfoRow
-                icon={<MapPin color="#6b7280" size={18} />}
+                icon={<MapPin className="w-4 h-4 text-gray-500" />}
                 label="GPS Coordinates"
                 value={`${householder.latitude}, ${householder.longitude}`}
                 actionText="Navigate"
                 onAction={handleNavigate}
               />
             )}
-          </View>
-        </Card>
+          </div>
+        </div>
 
         {/* Documents */}
         {householder.file_path && (
-          <Card className="mb-4">
-            <View className="p-4">
-              <View className="flex-row items-center mb-4">
-                <FileText color="#2563eb" size={20} />
-                <Text className="text-lg font-bold text-gray-800 ml-2">
-                  Documents
-                </Text>
-              </View>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4">
+            <div className="p-4 border-b border-gray-100">
+              <div className="flex items-center mb-4">
+                <FileText className="w-5 h-5 text-blue-600 mr-2" />
+                <h3 className="text-lg font-bold text-gray-800">Documents</h3>
+              </div>
 
-              <TouchableOpacity
-                onPress={handleViewDocument}
-                className="flex-row items-center bg-blue-50 p-4 rounded-lg"
+              <button
+                onClick={handleViewDocument}
+                className="w-full flex items-center bg-blue-50 hover:bg-blue-100 p-4 rounded-lg transition"
               >
-                <FileText color="#2563eb" size={24} />
-                <View className="ml-3 flex-1">
-                  <Text className="text-gray-800 font-medium">
+                <FileText className="w-6 h-6 text-blue-600 mr-3" />
+                <div className="flex-1 text-left">
+                  <p className="text-gray-800 font-medium">
                     {householder.file_name || 'Document'}
-                  </Text>
-                  <Text className="text-gray-500 text-sm">Tap to view</Text>
-                </View>
-                <Navigation color="#2563eb" size={20} />
-              </TouchableOpacity>
-            </View>
-          </Card>
+                  </p>
+                  <p className="text-gray-500 text-sm">Tap to view</p>
+                </div>
+                <Navigation className="w-5 h-5 text-blue-600" />
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Notes */}
         {householder.notes && (
-          <Card className="mb-4">
-            <View className="p-4">
-              <View className="flex-row items-center mb-4">
-                <Clipboard color="#2563eb" size={20} />
-                <Text className="text-lg font-bold text-gray-800 ml-2">
-                  Notes
-                </Text>
-              </View>
-              <Text className="text-gray-600 leading-6">
-                {householder.notes}
-              </Text>
-            </View>
-          </Card>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4">
+            <div className="p-4 border-b border-gray-100">
+              <div className="flex items-center mb-4">
+                <Clipboard className="w-5 h-5 text-blue-600 mr-2" />
+                <h3 className="text-lg font-bold text-gray-800">Notes</h3>
+              </div>
+              <p className="text-gray-600 leading-relaxed">{householder.notes}</p>
+            </div>
+          </div>
         )}
 
         {/* Edit Button */}
-        <Button onPress={handleEdit} className="mb-8" variant="primary">
-          <Edit color="white" size={20} />
-          <Text className="text-white font-bold ml-2">Edit Profile</Text>
-        </Button>
+        <button
+          onClick={handleEdit}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-4 mb-8 flex items-center justify-center transition"
+        >
+          <Edit className="w-5 h-5 mr-2" />
+          <span className="font-bold">Edit Profile</span>
+        </button>
 
         {/* Footer */}
-        <View className="mb-8">
-          <Text className="text-gray-400 text-xs text-center">
-            Created: {new Date(householder.created_at).toLocaleDateString()}
-          </Text>
-          <Text className="text-gray-400 text-xs text-center">
-            Updated: {new Date(householder.updated_at).toLocaleDateString()}
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
+        <div className="text-center text-gray-400 text-sm mb-8">
+          <p>Created: {new Date(householder.created_at).toLocaleDateString()}</p>
+          <p>Updated: {new Date(householder.updated_at).toLocaleDateString()}</p>
+        </div>
+      </main>
+    </div>
   );
 }
 
@@ -352,22 +361,28 @@ function InfoRow({
   onCopy?: () => void;
 }) {
   return (
-    <View className="flex-row items-center py-3 border-b border-gray-100 last:border-0">
-      <View className="w-8">{icon}</View>
-      <View className="flex-1 ml-2">
-        <Text className="text-xs text-gray-500">{label}</Text>
-        <Text className="text-gray-800 font-medium">{value}</Text>
-      </View>
+    <div className="flex items-center py-3 border-b border-gray-100 last:border-0">
+      <div className="w-8">{icon}</div>
+      <div className="flex-1 ml-2">
+        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-gray-800 font-medium">{value}</p>
+      </div>
       {onCopy && (
-        <TouchableOpacity onPress={onCopy} className="px-2">
-          <Text className="text-blue-600 text-xs font-medium">Copy</Text>
-        </TouchableOpacity>
+        <button
+          onClick={onCopy}
+          className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs font-medium transition"
+        >
+          Copy
+        </button>
       )}
       {onAction && actionText && (
-        <TouchableOpacity onPress={onAction} className="ml-2">
-          <Text className="text-green-600 text-xs font-medium">{actionText}</Text>
-        </TouchableOpacity>
+        <button
+          onClick={onAction}
+          className="ml-2 px-3 py-1 text-green-600 hover:bg-green-50 rounded text-xs font-medium transition"
+        >
+          {actionText}
+        </button>
       )}
-    </View>
+    </div>
   );
 }
