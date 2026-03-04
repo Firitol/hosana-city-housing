@@ -30,3 +30,10 @@
     "NEXT_PUBLIC_APP_NAME": "Hosana City Housing System"
   }
 }
+{
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- . && exit 1 || exit 0",
+  "framework": "nextjs",
+  "installCommand": "cd web-app && npm install",
+  "buildCommand": "cd web-app && npm run build",
+  "outputDirectory": "web-app/.next"
+}
