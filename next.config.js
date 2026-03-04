@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  output: 'standalone',  // ✅ Required for Render
   reactStrictMode: true,
   images: {
-    domains: ['public.vercel-storage.com'],
-    remotePatterns: [{ protocol: 'https', hostname: '**.vercel-storage.com' }],
+    unoptimized: true,  // ✅ Disable Next.js image optimization (Render doesn't support it well)
+    domains: ['s3.amazonaws.com', '*.render.com'],
   },
   experimental: {
     serverActions: { bodySizeLimit: '10mb' },
@@ -17,7 +17,7 @@ const nextConfig = {
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
           { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Content-Type, Date, X-Api-Version, Authorization' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Content-Type, Date, Authorization' },
         ],
       },
     ];
