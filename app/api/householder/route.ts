@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
-    // Audit log
+        // Audit log
     await logAudit({
       userId: user.id,
       username: user.username,
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
       userAgent
     });
 
-    return NextResponse.json({ success: true,  result[0] });
+    return NextResponse.json({ success: true, data: result[0] });  // ✅ Fixed!
   } catch (error) {
     console.error('Error creating householder:', error);
     return NextResponse.json({ error: 'Failed to create record' }, { status: 500 });
