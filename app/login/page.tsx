@@ -1,94 +1,98 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useTranslation } from '@/lib/i18n';
-import { Lock, User, AlertCircle, Loader2, Globe } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Users, MapPin, FileText, LogOut, Plus, Search } from 'lucide-react';
+import Link from 'next/link';
 
-export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
-  const { t, locale, setLocale } = useTranslation();
+export default function DashboardPage() {
+  const { user, logout, isAuthenticated, isLoading } = useAuth();
+  const { t, locale } = useTranslation();
   const router = useRouter();
+  const [stats, setStats] = useState({ totalHouseholds: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isAuthenticated) router.push('/dashboard');
-  }, [isAuthenticated, router]);
+    if (!isLoading && !isAuthenticated) router.push('/login');
+  }, [isAuthenticated, isLoading, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchStats();
+    }
+  }, [isAuthenticated]);
 
+  const fetchStats = async () => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
+      const token = localStorage.getItem('hosana_token');
+      const response = await fetch('/api/householders', { headers: { 'Authorization': `Bearer ${token}` } });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Login failed');
-
-      login(data.token, data.user);
-    } catch (err: any) {
-      setError(err.message);
+      setStats({ totalHouseholds: data.length });
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  if (isLoading || !isAuthenticated) {
+    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Hosana City Housing</h1>
-          <p className="text-gray-500 text-sm">Government System - Secure Access</p>
-        </div>
-
-        <div className="flex justify-center gap-2 mb-6">
-          <button onClick={() => setLocale('en')} className={`px-4 py-2 rounded-lg text-sm font-medium ${locale === 'en' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>English</button>
-          <button onClick={() => setLocale('am')} className={`px-4 py-2 rounded-lg text-sm font-medium ${locale === 'am' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>አማርኛ</button>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" /><span className="text-sm">{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter username" required />
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Hosana City Housing System</h1>
+              <p className="text-sm text-gray-500">{user?.role === 'MAYOR' ? 'Office - Full Access' : user?.role === 'MENDER_STAFF' ? `Mender Staff - ${user?.assignedMender}` : 'Administrator'}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <select value={locale} onChange={(e) => { localStorage.setItem('hosana_locale', e.target.value); window.location.reload(); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="en">English</option>
+                <option value="am">አማርኛ</option>
+              </select>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-700">{user?.fullName}</p>
+                  <p className="text-xs text-gray-500">{user?.username}</p>
+                </div>
+                <button onClick={logout} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Logout"><LogOut className="w-5 h-5" /></button>
+              </div>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter password" required />
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div><p className="text-sm text-gray-500 mb-1">Total Households</p><p className="text-3xl font-bold text-gray-800">{loading ? '...' : stats.totalHouseholds}</p></div>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center"><Users className="w-6 h-6 text-blue-600" /></div>
             </div>
           </div>
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50">
-            {loading ? <><Loader2 className="w-5 h-5 animate-spin" />Loading...</> : 'Login'}
-          </button>
-        </form>
-
-        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-          <p className="text-xs text-gray-500">© 2024 Hosana City Administration - All Rights Reserved</p>
-          <p className="text-xs text-gray-400 mt-2">⚠️ Authorized access only. All activities are monitored.</p>
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div><p className="text-sm text-gray-500 mb-1">Total Menders</p><p className="text-3xl font-bold text-gray-800">3</p></div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center"><MapPin className="w-6 h-6 text-green-600" /></div>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8">
+          <div className="p-6 border-b border-gray-100"><h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2></div>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link href="/householders" className="flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition"><Users className="w-6 h-6 text-blue-600" /><div><p className="font-medium text-gray-800">Householders</p><p className="text-sm text-gray-500">View & Manage</p></div></Link>
+            <Link href="/householders/new" className="flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition"><Plus className="w-6 h-6 text-green-600" /><div><p className="font-medium text-gray-800">Add New</p><p className="text-sm text-gray-500">Add New Record</p></div></Link>
+            <Link href="/map" className="flex items-center gap-3 p-4 bg-red-50 hover:bg-red-100 rounded-lg transition"><MapPin className="w-6 h-6 text-red-600" /><div><p className="font-medium text-gray-800">Emergency Map</p><p className="text-sm text-gray-500">View Locations</p></div></Link>
+            <Link href="/search" className="flex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition"><Search className="w-6 h-6 text-purple-600" /><div><p className="font-medium text-gray-800">Search</p><p className="text-sm text-gray-500">Find Records</p></div></Link>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
