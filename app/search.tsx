@@ -1,20 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { api } from '@/lib/api';
-import { Search, Filter, X, MapPin, Phone, FileText } from 'lucide-react-native';
-import { Card } from '@/components/Card';
+'use client';
 
-type Householder = {
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Search, Filter, X, MapPin, Phone, FileText, Plus, AlertTriangle } from 'lucide-react';
+
+interface Householder {
   id: string;
   name: string;
   father_name?: string;
@@ -25,53 +15,57 @@ type Householder = {
   latitude?: number;
   longitude?: number;
   file_path?: string;
-};
+  file_name?: string;
+  created_at: string;
+}
 
 const MENDERS = ['All', 'Mender 1', 'Mender 2', 'Mender 3'];
-const KEBELES = [
-  'All',
-  'Kebele 01',
-  'Kebele 02',
-  'Kebele 03',
-  'Kebele 04',
-  'Kebele 05',
-];
+const KEBELES = ['All', 'Kebele 01', 'Kebele 02', 'Kebele 03', 'Kebele 04', 'Kebele 05'];
 
-export default function SearchScreen() {
+export default function SearchPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMender, setSelectedMender] = useState('All');
   const [selectedKebele, setSelectedKebele] = useState('All');
   const [householders, setHouseholders] = useState<Householder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    fetchHouseholders();
+    const timer = setTimeout(() => {
+      fetchHouseholders();
+    }, 500); // Debounce search
+
+    return () => clearTimeout(timer);
   }, [searchQuery, selectedMender, selectedKebele]);
 
   const fetchHouseholders = async () => {
     try {
-      let url = '/householders?';
-      if (searchQuery) url += `query=${searchQuery}&`;
-      if (selectedMender !== 'All') url += `mender=${selectedMender}&`;
-      if (selectedKebele !== 'All') url += `kebele=${selectedKebele}&`;
+      const token = localStorage.getItem('hosana_token');
+      let url = '/api/householders?';
+      
+      if (searchQuery) url += `query=${encodeURIComponent(searchQuery)}&`;
+      if (selectedMender !== 'All') url += `mender=${encodeURIComponent(selectedMender)}&`;
+      if (selectedKebele !== 'All') url += `kebele=${encodeURIComponent(selectedKebele)}&`;
 
-      const response = await api.get(url);
-      setHouseholders(response.data);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load data');
+      }
+
+      const data = await response.json();
+      setHouseholders(data);
     } catch (error) {
       console.error('Fetch error:', error);
-      Alert.alert('Error', 'Failed to load data');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchHouseholders();
   };
 
   const clearFilters = () => {
@@ -82,258 +76,225 @@ export default function SearchScreen() {
 
   const handleEmergency = (householder: Householder) => {
     if (!householder.latitude || !householder.longitude) {
-      Alert.alert(
-        'No Location',
-        'GPS coordinates not available for this householder'
-      );
+      alert('GPS coordinates not available for this householder');
       return;
     }
 
-    Alert.alert(
-      'Emergency Mode',
-      `Open map for ${householder.name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Open Map',
-          onPress: () => {
-            router.push({
-              pathname: '/map',
-              params: {
-                lat: householder.latitude.toString(),
-                lng: householder.longitude.toString(),
-                name: householder.name,
-                address: `${householder.house_number}, ${householder.mender}`,
-              },
-            });
-          },
-        },
-      ]
-    );
+    if (confirm(`Open map for ${householder.name}?`)) {
+      router.push(
+        `/map?lat=${householder.latitude}&lng=${householder.longitude}&name=${encodeURIComponent(householder.name)}&address=${encodeURIComponent(householder.house_number + ', ' + householder.mender)}`
+      );
+    }
   };
 
   const handleCall = (phone?: string) => {
     if (!phone) {
-      Alert.alert('No Phone', 'Phone number not available');
+      alert('Phone number not available');
       return;
     }
-    // In production, use Linking.openURL(`tel:${phone}`)
-    Alert.alert('Call', `Dial ${phone}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Call', onPress: () => console.log('Calling:', phone) },
-    ]);
+    window.location.href = `tel:${phone}`;
   };
 
-  const renderHouseholder = ({ item }: { item: Householder }) => (
-    <Card className="mb-3">
-      <TouchableOpacity
-        onPress={() =>
-          router.push({
-            pathname: '/profile',
-            params: { id: item.id },
-          })
-        }
-      >
-        <View className="p-4">
-          {/* Header */}
-          <View className="flex-row justify-between items-start mb-3">
-            <View className="flex-1">
-              <Text className="text-lg font-bold text-gray-800">{item.name}</Text>
-              {item.father_name && (
-                <Text className="text-sm text-gray-500">{item.father_name}</Text>
-              )}
-            </View>
-            <TouchableOpacity
-              onPress={() => handleEmergency(item)}
-              className="bg-red-100 px-3 py-1 rounded-full"
-            >
-              <Text className="text-red-600 font-bold text-xs">URGENT</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Details */}
-          <View className="flex-row flex-wrap gap-2 mb-3">
-            <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded">
-              <MapPin color="#6b7280" size={14} />
-              <Text className="text-xs text-gray-600 ml-1">
-                {item.house_number}
-              </Text>
-            </View>
-            <View className="flex-row items-center bg-blue-100 px-2 py-1 rounded">
-              <Text className="text-xs text-blue-600">{item.mender}</Text>
-            </View>
-            <View className="flex-row items-center bg-green-100 px-2 py-1 rounded">
-              <Text className="text-xs text-green-600">{item.kebele}</Text>
-            </View>
-          </View>
-
-          {/* Actions */}
-          <View className="flex-row gap-3">
-            {item.phone && (
-              <TouchableOpacity
-                onPress={() => handleCall(item.phone)}
-                className="flex-row items-center bg-green-50 px-3 py-2 rounded-lg"
-              >
-                <Phone color="#16a34a" size={16} />
-                <Text className="text-green-700 text-sm ml-1">Call</Text>
-              </TouchableOpacity>
-            )}
-            {item.file_path && (
-              <TouchableOpacity className="flex-row items-center bg-blue-50 px-3 py-2 rounded-lg">
-                <FileText color="#2563eb" size={16} />
-                <Text className="text-blue-700 text-sm ml-1">Docs</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </TouchableOpacity>
-    </Card>
-  );
+  const handleViewDocument = (filePath?: string) => {
+    if (!filePath) {
+      alert('No document available');
+      return;
+    }
+    window.open(filePath, '_blank');
+  };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <View className="bg-white border-b border-gray-200 px-4 py-4">
-        <Text className="text-2xl font-bold text-gray-800 mb-4">
-          Search Householders
-        </Text>
+      <header className="bg-white border-b sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-800">Search Householders</h1>
+            <button
+              onClick={() => router.push('/householders/new')}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add New</span>
+            </button>
+          </div>
 
-        {/* Search Bar */}
-        <View className="flex-row items-center border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 mb-3">
-          <Search color="#6b7280" size={20} />
-          <TextInput
-            className="flex-1 ml-3 text-gray-800"
-            placeholder="Search by name or house number..."
-            placeholderTextColor="#9ca3af"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X color="#6b7280" size={20} />
-            </TouchableOpacity>
-          )}
-        </View>
+          {/* Search Bar */}
+          <div className="flex items-center border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 mb-3">
+            <Search className="w-5 h-5 text-gray-400 mr-3" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name or house number..."
+              className="flex-1 bg-transparent outline-none text-gray-800"
+            />
+            {searchQuery.length > 0 && (
+              <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
 
-        {/* Filter Toggle */}
-        <TouchableOpacity
-          onPress={() => setShowFilters(!showFilters)}
-          className="flex-row items-center"
-        >
-          <Filter color="#2563eb" size={18} />
-          <Text className="text-blue-600 ml-2 font-medium">
+          {/* Filter Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <Filter className="w-4 h-4 mr-2" />
             {showFilters ? 'Hide Filters' : 'Show Filters'}
-          </Text>
-        </TouchableOpacity>
+          </button>
 
-        {/* Filters */}
-        {showFilters && (
-          <View className="mt-4 space-y-3">
-            {/* Mender Filter */}
-            <View>
-              <Text className="text-sm font-medium text-gray-700 mb-2">Mender</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {MENDERS.map((mender) => (
-                  <TouchableOpacity
-                    key={mender}
-                    onPress={() => setSelectedMender(mender)}
-                    className={`px-4 py-2 rounded-lg ${
-                      selectedMender === mender
-                        ? 'bg-blue-600'
-                        : 'bg-gray-200'
-                    }`}
-                  >
-                    <Text
-                      className={
+          {/* Filters */}
+          {showFilters && (
+            <div className="mt-4 space-y-4">
+              {/* Mender Filter */}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Mender</p>
+                <div className="flex flex-wrap gap-2">
+                  {MENDERS.map((mender) => (
+                    <button
+                      key={mender}
+                      onClick={() => setSelectedMender(mender)}
+                      className={`px-4 py-2 rounded-lg transition ${
                         selectedMender === mender
-                          ? 'text-white font-medium'
-                          : 'text-gray-700'
-                      }
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
                     >
                       {mender}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {/* Kebele Filter */}
-            <View>
-              <Text className="text-sm font-medium text-gray-700 mb-2">Kebele</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {KEBELES.map((kebele) => (
-                  <TouchableOpacity
-                    key={kebele}
-                    onPress={() => setSelectedKebele(kebele)}
-                    className={`px-4 py-2 rounded-lg ${
-                      selectedKebele === kebele
-                        ? 'bg-green-600'
-                        : 'bg-gray-200'
-                    }`}
-                  >
-                    <Text
-                      className={
+              {/* Kebele Filter */}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Kebele</p>
+                <div className="flex flex-wrap gap-2">
+                  {KEBELES.map((kebele) => (
+                    <button
+                      key={kebele}
+                      onClick={() => setSelectedKebele(kebele)}
+                      className={`px-4 py-2 rounded-lg transition ${
                         selectedKebele === kebele
-                          ? 'text-white font-medium'
-                          : 'text-gray-700'
-                      }
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
                     >
                       {kebele}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {/* Clear Filters */}
-            <TouchableOpacity
-              onPress={clearFilters}
-              className="mt-2 py-2"
-            >
-              <Text className="text-red-600 font-medium text-center">
+              {/* Clear Filters */}
+              <button
+                onClick={clearFilters}
+                className="text-red-600 hover:text-red-700 font-medium text-sm"
+              >
                 Clear All Filters
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
 
       {/* Results */}
       {loading ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text className="text-gray-500 mt-4">Loading...</Text>
-        </View>
+        <div className="flex-1 flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading...</p>
+          </div>
+        </div>
       ) : householders.length === 0 ? (
-        <View className="flex-1 justify-center items-center px-8">
-          <Search color="#d1d5db" size={64} />
-          <Text className="text-gray-400 text-lg mt-4 text-center">
-            No householders found
-          </Text>
-          <Text className="text-gray-400 text-sm mt-2 text-center">
-            Try adjusting your search or filters
-          </Text>
-        </View>
+        <div className="flex-1 flex items-center justify-center py-20 px-4">
+          <div className="text-center max-w-md">
+            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg mb-2">No householders found</p>
+            <p className="text-gray-400 text-sm">Try adjusting your search or filters</p>
+          </div>
+        </div>
       ) : (
-        <FlatList
-          data={householders}
-          renderItem={renderHouseholder}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        />
-      )}
+        <main className="max-w-7xl mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {householders.map((h) => (
+              <div
+                key={h.id}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition cursor-pointer"
+                onClick={() => router.push(`/profile?id=${h.id}`)}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800">{h.name}</h3>
+                    {h.father_name && (
+                      <p className="text-sm text-gray-500">{h.father_name}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEmergency(h);
+                    }}
+                    className="bg-red-100 hover:bg-red-200 px-3 py-1 rounded-full transition"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-red-600" />
+                  </button>
+                </div>
 
-      {/* Results Count */}
-      {!loading && householders.length > 0 && (
-        <View className="bg-white border-t border-gray-200 px-4 py-3">
-          <Text className="text-gray-500 text-sm text-center">
-            {householders.length} results found
-          </Text>
-        </View>
+                {/* Details */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <div className="flex items-center bg-gray-100 px-2 py-1 rounded text-xs">
+                    <MapPin className="w-3 h-3 text-gray-500 mr-1" />
+                    <span className="text-gray-600">{h.house_number}</span>
+                  </div>
+                  <div className="bg-blue-100 px-2 py-1 rounded text-xs">
+                    <span className="text-blue-600">{h.mender}</span>
+                  </div>
+                  <div className="bg-green-100 px-2 py-1 rounded text-xs">
+                    <span className="text-green-600">{h.kebele}</span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-3 border-t border-gray-100">
+                  {h.phone && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCall(h.phone);
+                      }}
+                      className="flex items-center gap-1 px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition text-sm text-green-700"
+                    >
+                      <Phone className="w-4 h-4" />
+                      Call
+                    </button>
+                  )}
+                  {h.file_path && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDocument(h.file_path);
+                      }}
+                      className="flex items-center gap-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition text-sm text-blue-700"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Docs
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Results Count */}
+          <div className="mt-6 text-center text-gray-500 text-sm">
+            {householders.length} result{householders.length !== 1 ? 's' : ''} found
+          </div>
+        </main>
       )}
-    </View>
+    </div>
   );
 }
