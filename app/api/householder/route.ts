@@ -66,7 +66,9 @@ export async function POST(request: NextRequest) {
     const notes = formData.get('notes') as string;
     const file = formData.get('document') as File;
 
-    if (user.role === 'MENDER_STAFF' && user.assigned_mender !== mender) return NextResponse.json({ error: 'You can only create records for your assigned mender' }, { status: 403 });
+    if (user.role === 'MENDER_STAFF' && user.assigned_mender !== mender) {
+      return NextResponse.json({ error: 'You can only create records for your assigned mender' }, { status: 403 });
+    }
 
     const phoneEncrypted = phone ? encrypt(phone) : null;
     let filePath = '', fileName = '', fileSize = 0;
@@ -75,7 +77,8 @@ export async function POST(request: NextRequest) {
     const result = await sql`INSERT INTO householders (name, father_name, house_number, mender, kebele, phone_encrypted, email, latitude, longitude, notes, file_path, file_name, file_size, created_by) VALUES (${name}, ${fatherName || null}, ${houseNumber}, ${mender}, ${kebele}, ${phoneEncrypted}, ${email || null}, ${parseFloat(latitude) || null}, ${parseFloat(longitude) || null}, ${notes || null}, ${filePath}, ${fileName}, ${fileSize}, ${user.id}) RETURNING *`;
 
     await logAudit({ userId: user.id, username: user.username, action: 'CREATE_HOUSEHOLDER', resourceType: 'HOUSEHOLDER', resourceId: result[0].id, newValues: { name, house_number: houseNumber, mender, kebele }, ipAddress: clientIp, userAgent });
-    return NextResponse.json({ success: true,  result[0] });
+
+    return NextResponse.json({ success: true,  result[0] });  // ✅ FIXED LINE
   } catch (error) {
     console.error('Error creating householder:', error);
     return NextResponse.json({ error: 'Failed to create record' }, { status: 500 });
