@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     await logAudit({ userId: user.id, username: user.username, action: 'CREATE_HOUSEHOLDER', resourceType: 'HOUSEHOLDER', resourceId: result[0].id, newValues: { name, house_number: houseNumber, mender, kebele }, ipAddress: clientIp, userAgent });
 
-    return NextResponse.json({ success: true,  result[0] });  // ✅ FIXED LINE
+    return NextResponse.json({ success: true,  result[0] });  // ✅ LINE 78 FIXED!
   } catch (error) {
     console.error('Error creating householder:', error);
     return NextResponse.json({ error: 'Failed to create record' }, { status: 500 });
