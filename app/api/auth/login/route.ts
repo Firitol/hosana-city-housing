@@ -34,13 +34,12 @@ export async function POST(request: NextRequest) {
         lockedUntil: loginCheck.lockedUntil 
       }, { status: 423 });
     }
-
-    const users = await sql`
-      SELECT id, username, password_hash, role, assigned_mender, full_name, is_active, approval_status 
-      FROM users 
-      WHERE username = ${username}
-    `;
-
+// To this (case-insensitive):
+     const users = await sql`
+     SELECT id, username, password_hash, role, assigned_mender, full_name, is_active, approval_status 
+     FROM users 
+      WHERE LOWER(username) = LOWER(${username})
+     `;
     console.log('User query result:', users);
 
     if (users.length === 0) {
