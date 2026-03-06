@@ -26,26 +26,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoaded, setIsLoaded] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    // ✅ Safe: Only access localStorage in browser
-    if (typeof window !== 'undefined') {
-      try {
-        const storedToken = localStorage.getItem('hosana_token');
-        const storedUser = localStorage.getItem('hosana_user');
-        
-        if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-        }
-      } catch (error) {
-        console.error('Failed to load auth from localStorage:', error);
-      }
+    // Prevent multiple runs
+    if (isLoaded) return;
+
+    // Only run in browser
+    if (typeof window === 'undefined') {
+      setIsLoading(false);
+      setIsLoaded(true);
+      return;
     }
-    // ✅ Always set isLoading to false after check
+
+    try {
+      const storedToken = localStorage.getItem('hosana_token');
+      const storedUser = localStorage.getItem('hosana_user');
+
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error('Auth load error:', error);
+    }
+
+    // CRITICAL: Always set loading to false
     setIsLoading(false);
-  }, []);
+    setIsLoaded(true);
+  }, [isLoaded]);
 
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
