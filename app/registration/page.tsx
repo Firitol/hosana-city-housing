@@ -24,19 +24,16 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    // Validate password strength
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters');
       return;
     }
 
-    // Validate Mender selection for staff
     if (formData.role === 'MENDER_STAFF' && !formData.assignedMender) {
       setError('Please select your assigned Mender');
       return;
@@ -95,7 +92,6 @@ export default function RegisterPage() {
           <p className="text-gray-500 text-sm">Hosana City Housing System</p>
         </div>
 
-        {/* Security Notice */}
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg mb-6 text-sm">
           <AlertCircle className="w-4 h-4 inline mr-2" />
           <strong>Note:</strong> All new accounts require administrator approval before login.
@@ -109,7 +105,6 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Full Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
             <div className="relative">
@@ -125,7 +120,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Username */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Username *</label>
             <div className="relative">
@@ -141,7 +135,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
             <div className="relative">
@@ -157,7 +150,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Role Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Role *</label>
             <div className="relative">
@@ -170,16 +162,10 @@ export default function RegisterPage() {
               >
                 <option value="MENDER_STAFF">Mender Staff</option>
                 <option value="AUDITOR">Auditor</option>
-                <option value="MAYOR" disabled>MAYOR (Admin Only)</option>
-                <option value="SUPER_ADMIN" disabled>SUPER_ADMIN (Admin Only)</option>
               </select>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              ⚠️ SUPER_ADMIN and MAYOR roles require administrator creation
-            </p>
           </div>
 
-          {/* Assigned Mender (for staff only) */}
           {formData.role === 'MENDER_STAFF' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Mender *</label>
@@ -200,7 +186,6 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Password *</label>
             <div className="relative">
@@ -217,7 +202,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Confirm Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
             <div className="relative">
@@ -233,7 +217,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -250,7 +233,6 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        {/* Login Link */}
         <div className="mt-6 text-center">
           <p className="text-gray-600">
             Already have an account?{' '}
