@@ -6,12 +6,10 @@ export async function POST(request: NextRequest) {
   try {
     const { username, email, password, fullName, role, assignedMender } = await request.json();
 
-    // Validate required fields
     if (!username || !email || !password || !fullName || !role) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
     }
 
-    // Security: Limit self-registration roles
     const allowedRoles = ['MENDER_STAFF', 'AUDITOR'];
     if (!allowedRoles.includes(role)) {
       return NextResponse.json({ 
@@ -19,14 +17,6 @@ export async function POST(request: NextRequest) {
       }, { status: 403 });
     }
 
-    // SUPER_ADMIN and MAYOR require admin creation
-    if (role === 'SUPER_ADMIN' || role === 'MAYOR') {
-      return NextResponse.json({ 
-        error: 'This role requires administrator approval. Please contact IT.' 
-      }, { status: 403 });
-    }
-
-    // Check if username or email already exists
     const existing = await sql`
       SELECT id FROM users WHERE username = ${username} OR email = ${email}
     `;
@@ -37,15 +27,12 @@ export async function POST(request: NextRequest) {
       }, { status: 409 });
     }
 
-    // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Get client IP
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = request.ip;
     const registrationIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
 
-    // Create user with PENDING status
     const result = await sql`
       INSERT INTO users (
         username, email, password_hash, full_name, role, 
