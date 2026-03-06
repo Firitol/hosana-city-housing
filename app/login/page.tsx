@@ -5,25 +5,18 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useTranslation } from '@/lib/i18n';
 import { Lock, User, AlertCircle, Loader2, Globe } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
   const { login, isAuthenticated } = useAuth();
   const { t, locale, setLocale } = useTranslation();
   const router = useRouter();
 
   useEffect(() => {
-    // Debug: Log auth state on mount
-    setDebugInfo({
-      isAuthenticated,
-      hasToken: typeof window !== 'undefined' ? !!localStorage.getItem('hosana_token') : false,
-      hasUser: typeof window !== 'undefined' ? !!localStorage.getItem('hosana_user') : false,
-    });
-
     if (isAuthenticated) {
       router.push('/dashboard');
     }
@@ -35,8 +28,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      console.log('Attempting login...', { username });
-
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,7 +35,6 @@ export default function LoginPage() {
       });
 
       const data = await response.json();
-      console.log('Login response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
@@ -70,7 +60,6 @@ export default function LoginPage() {
           <p className="text-gray-500 text-sm">Government System - Secure Access</p>
         </div>
 
-        {/* Language Toggle */}
         <div className="flex justify-center gap-2 mb-6">
           <button
             onClick={() => setLocale('en')}
@@ -89,16 +78,6 @@ export default function LoginPage() {
             አማርኛ
           </button>
         </div>
-
-        {/* Debug Info */}
-        {debugInfo && (
-          <div className="bg-gray-100 p-3 rounded-lg mb-4 text-xs">
-            <p><strong>Debug:</strong></p>
-            <p>Authenticated: {String(isAuthenticated)}</p>
-            <p>Has Token: {String(debugInfo.hasToken)}</p>
-            <p>Has User: {String(debugInfo.hasUser)}</p>
-          </div>
-        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
@@ -154,18 +133,19 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* Register Link */}
+        <div className="mt-6 text-center">
+          <p className="text-gray-600">
+            Don't have an account?{' '}
+            <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+              Register here
+            </Link>
+          </p>
+        </div>
+
         <div className="mt-8 pt-6 border-t border-gray-200 text-center">
           <p className="text-xs text-gray-500">© 2024 Hosana City Administration</p>
           <p className="text-xs text-gray-400 mt-2">Default: admin / Admin123!</p>
-          {/* Register Link */}
-           <div className="mt-6 text-center">
-           <p className="text-gray-600">
-            Don't have an account?{' '}
-            <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
-      Register here
-       </Link>
-     </p>
-          </div>
         </div>
       </div>
     </div>
