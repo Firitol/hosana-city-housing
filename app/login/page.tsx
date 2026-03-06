@@ -157,6 +157,15 @@ export default function LoginPage() {
         <div className="mt-8 pt-6 border-t border-gray-200 text-center">
           <p className="text-xs text-gray-500">© 2024 Hosana City Administration</p>
           <p className="text-xs text-gray-400 mt-2">Default: admin / Admin123!</p>
+          {/* Register Link */}
+           <div className="mt-6 text-center">
+           <p className="text-gray-600">
+            Don't have an account?{' '}
+            <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+      Register here
+       </Link>
+     </p>
+          </div>
         </div>
       </div>
     </div>
