@@ -9,7 +9,6 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Hosana City Housing System',
   description: 'Government Housing Management System for Hosana City',
-  icons: { icon: '/favicon.ico' },
 };
 
 export default function RootLayout({
