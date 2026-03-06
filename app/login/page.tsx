@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
+import { Lock, User, AlertCircle, Loader2, Globe } from 'lucide-react';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const { login, isAuthenticated } = useAuth();
+  const { t, locale, setLocale } = useTranslation();
   const router = useRouter();
 
   useEffect(() => {
@@ -66,6 +68,26 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Hosana City Housing</h1>
           <p className="text-gray-500 text-sm">Government System - Secure Access</p>
+        </div>
+
+        {/* Language Toggle */}
+        <div className="flex justify-center gap-2 mb-6">
+          <button
+            onClick={() => setLocale('en')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              locale === 'en' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            English
+          </button>
+          <button
+            onClick={() => setLocale('am')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              locale === 'am' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            አማርኛ
+          </button>
         </div>
 
         {/* Debug Info */}
