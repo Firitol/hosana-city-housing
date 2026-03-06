@@ -169,15 +169,14 @@ export default function DashboardPage() {
               <div>
                 <p className="font-medium text-gray-800">Search</p>
                 <p className="text-sm text-gray-500">Find Records</p>
-                {user?.role === 'SUPER_ADMIN' && (
-               <Link href="/admin/users"className="flex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition">
-                <Users className="w-6 h-6 text-purple-600" />
-                <div>
-                  <p className="font-medium text-gray-800">User Management</p>
-               <p className="text-sm text-gray-500">Approve & Manage Users</p>
-               </div>
-               </Link>
-                )}
+                {user?.role === 'SUPER_ADMIN' && ( <Link href="/admin/users"className="flex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition">
+    <Users className="w-6 h-6 text-purple-600" />
+    <div>
+      <p className="font-medium text-gray-800">User Management</p>
+      <p className="text-sm text-gray-500">Approve & Manage Users</p>
+    </div>
+  </Link>
+)}
               </div>
             </Link>
           </div>
