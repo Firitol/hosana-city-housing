@@ -1,0 +1,325 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { Users, Check, X, Trash2, Search, Filter, Shield, Building, Mail, Calendar } from 'lucide-react';
+import Link from 'next/link';
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  full_name: string;
+  role: string;
+  assigned_mender?: string;
+  approval_status: string;
+  is_active: boolean;
+  registration_date: string;
+  registration_ip: string;
+}
+
+export default function AdminUsersPage() {
+  const { isAuthenticated, user, isLoading } = useAuth();
+  const router = useRouter();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (!isLoading && (!isAuthenticated || user?.role !== 'SUPER_ADMIN')) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, user, router]);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'SUPER_ADMIN') {
+      fetchUsers();
+    }
+  }, [isAuthenticated, user]);
+
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('hosana_token');
+      const response = await fetch('/api/admin/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async (userId: string) => {
+    if (!confirm('Approve this user account?')) return;
+
+    try {
+      const token = localStorage.getItem('hosana_token');
+      await fetch(`/api/admin/users/${userId}/approve`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Approve failed:', error);
+    }
+  };
+
+  const handleReject = async (userId: string) => {
+    if (!confirm('Reject this user account?')) return;
+
+    try {
+      const token = localStorage.getItem('hosana_token');
+      await fetch(`/api/admin/users/${userId}/reject`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Reject failed:', error);
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    if (!confirm('Delete this user account permanently?')) return;
+
+    try {
+      const token = localStorage.getItem('hosana_token');
+      await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Delete failed:', error);
+    }
+  };
+
+  const handleToggleActive = async (userId: string, isActive: boolean) => {
+    try {
+      const token = localStorage.getItem('hosana_token');
+      await fetch(`/api/admin/users/${userId}/toggle`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ is_active: !isActive })
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Toggle failed:', error);
+    }
+  };
+
+  const filteredUsers = users.filter(u => {
+    const matchesFilter = filter === 'all' || u.approval_status === filter;
+    const matchesSearch = u.username.toLowerCase().includes(search.toLowerCase()) ||
+                         u.email.toLowerCase().includes(search.toLowerCase()) ||
+                         u.full_name.toLowerCase().includes(search.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  if (isLoading || !isAuthenticated || user?.role !== 'SUPER_ADMIN') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
+              <p className="text-sm text-gray-500">Manage user accounts and approvals</p>
+            </div>
+            <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 font-medium">
+              ← Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Stats */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <p className="text-sm text-gray-500 mb-1">Total Users</p>
+            <p className="text-3xl font-bold text-gray-800">{users.length}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <p className="text-sm text-gray-500 mb-1">Pending Approval</p>
+            <p className="text-3xl font-bold text-yellow-600">
+              {users.filter(u => u.approval_status === 'pending').length}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <p className="text-sm text-gray-500 mb-1">Approved</p>
+            <p className="text-3xl font-bold text-green-600">
+              {users.filter(u => u.approval_status === 'approved').length}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <p className="text-sm text-gray-500 mb-1">Active Users</p>
+            <p className="text-3xl font-bold text-blue-600">
+              {users.filter(u => u.is_active).length}
+            </p>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-4">
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-64">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by username, email, or name..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-gray-400" />
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="all">All Users</option>
+                <option value="pending">Pending Approval</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Users Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mender</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Registered</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading...</td>
+                  </tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No users found</td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="font-medium text-gray-800">{user.full_name}</p>
+                          <p className="text-sm text-gray-500">{user.username}</p>
+                          <p className="text-xs text-gray-400">{user.email}</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          user.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-700' :
+                          user.role === 'MAYOR' ? 'bg-purple-100 text-purple-700' :
+                          user.role === 'MENDER_STAFF' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {user.assigned_mender || '-'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user.approval_status === 'approved' ? 'bg-green-100 text-green-700' :
+                            user.approval_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {user.approval_status}
+                          </span>
+                          {user.is_active && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {new Date(user.registration_date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          {user.approval_status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(user.id)}
+                                className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                title="Approve"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleReject(user.id)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                title="Reject"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleToggleActive(user.id, user.is_active)}
+                            className={`p-1 rounded ${
+                              user.is_active ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'
+                            }`}
+                            title={user.is_active ? 'Deactivate' : 'Activate'}
+                          >
+                            {user.is_active ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                          </button>
+                          {user.role !== 'SUPER_ADMIN' && (
+                            <button
+                              onClick={() => handleDelete(user.id)}
+                              className="p-1 text-red-600 hover:bg-red-50 rounded"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
