@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 
-export async function POST(request: NextRequest, { params }: { params: { userId: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: { userId: string } }) {
   try {
     const token = request.headers.get('authorization')?.split(' ')[1];
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -16,17 +16,17 @@ export async function POST(request: NextRequest, { params }: { params: { userId:
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const { is_active } = await request.json();
+    // Prevent deleting SUPER_ADMIN accounts
+    const targetUser = await sql`SELECT role FROM users WHERE id = ${params.userId}`;
+    if (targetUser[0]?.role === 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Cannot delete SUPER_ADMIN accounts' }, { status: 403 });
+    }
 
-    await sql`
-      UPDATE users 
-      SET is_active = ${is_active}
-      WHERE id = ${params.userId}
-    `;
+    await sql`DELETE FROM users WHERE id = ${params.userId}`;
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Toggle error:', error);
+    console.error('Delete error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
