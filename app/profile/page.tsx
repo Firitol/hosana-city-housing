@@ -3,7 +3,7 @@ import ProfilePageClient from '../profile';
 
 export const dynamic = 'force-dynamic';
 
-function ProfileRouteLoading() {
+function PageLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -13,8 +13,9 @@ function ProfileRouteLoading() {
 
 export default function ProfileRoutePage() {
   return (
-    <Suspense fallback={<ProfileRouteLoading />}>
+    <Suspense fallback={<PageLoading />}>
       <ProfilePageClient />
     </Suspense>
   );
 }
+export { default } from '../profile';
