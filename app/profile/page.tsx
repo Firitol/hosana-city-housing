@@ -18,3 +18,4 @@ export default function ProfileRoutePage() {
     </Suspense>
   );
 }
+export { default } from '../profile';

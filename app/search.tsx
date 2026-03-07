@@ -158,31 +158,13 @@ export default function SearchPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <h1 className="text-2xl font-bold text-gray-800">Search Householders</h1>
-            <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,text/csv"
-                className="hidden"
-                onChange={handleCsvUpload}
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition disabled:opacity-60"
-                title="CSV headers: name,house_number,mender,kebele (+optional: father_name,phone,email,latitude,longitude,notes)"
-              >
-                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                <span className="hidden sm:inline">Upload CSV</span>
-              </button>
-              <button
-                onClick={() => router.push('/registration')}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Add New</span>
-              </button>
-            </div>
+            <button
+              onClick={() => router.push('/registration')}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add New</span>
+            </button>
           </div>
 
           {/* Search Bar */}
