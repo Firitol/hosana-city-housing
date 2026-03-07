@@ -1,3 +1,7 @@
+// ✅ Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
@@ -6,8 +10,8 @@ import { encrypt, decrypt } from '@/lib/utils';
 
 // GET: Fetch householders with filters
 export async function GET(request: NextRequest) {
-   export const dynamic = 'force-dynamic';
-   export const revalidate = 0;
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = request.ip;
   const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
