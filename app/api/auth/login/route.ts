@@ -1,4 +1,4 @@
-// ✅ Force dynamic rendering for this API route
+// ✅ Force dynamic rendering
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -7,10 +7,6 @@ import { sql } from '@/lib/db';
 import { verifyPassword, generateToken, checkLoginAttempts, recordLoginAttempt } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const ip = request.ip;
-  const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
-
   try {
     // Check environment variables
     if (!process.env.DATABASE_URL) {
@@ -23,23 +19,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
+    // Parse request body
     const { username, password } = await request.json();
 
     if (!username || !password) {
       return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
     }
 
+    // Get client IP
+    const forwarded = request.headers.get('x-forwarded-for');
+    const ip = request.ip;
+    const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
+
     console.log('Login attempt:', { username, ip: clientIp });
 
+    // Check login attempts (account lockout)
     const loginCheck = await checkLoginAttempts(username);
     if (!loginCheck.allowed) {
       return NextResponse.json({ 
-        error: 'Account temporarily locked', 
+        error: 'Account temporarily locked. Try again in 30 minutes.', 
         lockedUntil: loginCheck.lockedUntil 
       }, { status: 423 });
     }
 
-    // Case-insensitive username lookup
+    // Find user (case-insensitive)
     const users = await sql`
       SELECT id, username, password_hash, role, assigned_mender, full_name, is_active, approval_status 
       FROM users 
@@ -48,6 +51,7 @@ export async function POST(request: NextRequest) {
 
     console.log('User query result:', users);
 
+    // User not found
     if (users.length === 0) {
       await recordLoginAttempt(username, false);
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
@@ -61,16 +65,19 @@ export async function POST(request: NextRequest) {
       approvalStatus: user.approval_status 
     });
 
+    // Check if account is active
     if (!user.is_active) {
-      return NextResponse.json({ error: 'Account deactivated' }, { status: 403 });
+      return NextResponse.json({ error: 'Account deactivated. Contact administrator.' }, { status: 403 });
     }
 
+    // Check if account is approved
     if (user.approval_status !== 'approved') {
       return NextResponse.json({ 
-        error: 'Account pending approval. Please contact administrator.' 
+        error: 'Account pending approval. Contact administrator.' 
       }, { status: 403 });
     }
 
+    // Verify password
     const isValid = await verifyPassword(password, user.password_hash);
     console.log('Password valid:', isValid);
     
@@ -79,8 +86,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
+    // Record successful login
     await recordLoginAttempt(username, true);
     
+    // Generate JWT token
     const token = generateToken({
       id: user.id,
       username: user.username,
@@ -90,6 +99,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Login successful:', { username, role: user.role });
 
+    // Return success response
     return NextResponse.json({
       success: true,
       token,
@@ -104,7 +114,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json({ 
-      error: 'Server error',
+      error: 'Server error. Please try again later.',
       details: error instanceof Error ? error.message : 'Unknown'
     }, { status: 500 });
   }
