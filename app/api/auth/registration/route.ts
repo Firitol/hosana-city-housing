@@ -29,8 +29,8 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await hashPassword(password);
 
-    const forwarded = request.headers.get('x-forwarded-for');
-    const ip = request.ip;
+    export const dynamic = 'force-dynamic';
+    export const revalidate = 0;
     const registrationIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
 
     const result = await sql`
