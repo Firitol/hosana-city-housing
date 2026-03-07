@@ -3,8 +3,8 @@ import { sql } from '@/lib/db';
 import { verifyPassword, generateToken, checkLoginAttempts, recordLoginAttempt } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const ip = request.ip;
+  export const dynamic = 'force-dynamic';
+  export const revalidate = 0;
   const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
 
   try {
