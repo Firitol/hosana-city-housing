@@ -67,9 +67,9 @@ export default function ProfilePage() {
       const data = await response.json();
       // If API returns array, take first item
       setHouseholder(Array.isArray(data) ? data[0] : data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Fetch error:', err);
-      setError(err.message || 'Failed to load profile');
+      setError(err instanceof Error ? err.message : 'Failed to load profile');
     } finally {
       setLoading(false);
     }

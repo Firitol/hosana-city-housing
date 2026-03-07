@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse request body
-    const { username, password } = await request.json();
+    const body = await request.json();
+    const username = typeof body?.username === 'string' ? body.username.trim() : '';
+    const password = typeof body?.password === 'string' ? body.password : '';
 
     if (!username || !password) {
       return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
@@ -30,8 +32,6 @@ export async function POST(request: NextRequest) {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = request.ip;
     const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
-
-    console.log('Login attempt:', { username, ip: clientIp });
 
     // Check login attempts (account lockout)
     const loginCheck = await checkLoginAttempts(username);
@@ -49,8 +49,6 @@ export async function POST(request: NextRequest) {
       WHERE LOWER(username) = LOWER(${username})
     `;
 
-    console.log('User query result:', users);
-
     // User not found
     if (users.length === 0) {
       await recordLoginAttempt(username, false);
@@ -58,12 +56,6 @@ export async function POST(request: NextRequest) {
     }
 
     const user = users[0];
-
-    console.log('User found:', { 
-      username: user.username, 
-      isActive: user.is_active, 
-      approvalStatus: user.approval_status 
-    });
 
     // Check if account is active
     if (!user.is_active) {
@@ -79,8 +71,6 @@ export async function POST(request: NextRequest) {
 
     // Verify password
     const isValid = await verifyPassword(password, user.password_hash);
-    console.log('Password valid:', isValid);
-    
     if (!isValid) {
       await recordLoginAttempt(username, false);
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
@@ -96,8 +86,6 @@ export async function POST(request: NextRequest) {
       role: user.role,
       assigned_mender: user.assigned_mender
     });
-
-    console.log('Login successful:', { username, role: user.role });
 
     // Return success response
     return NextResponse.json({
