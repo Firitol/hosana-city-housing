@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { I18nProvider } from '@/lib/i18n';
 import { AuthProvider } from '@/lib/auth-context';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Hosana City Housing System',
@@ -22,7 +19,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#2563eb" />
       </head>
-      <body className={inter.className}>
+      <body className="antialiased">
         <I18nProvider>
           <AuthProvider>{children}</AuthProvider>
         </I18nProvider>
