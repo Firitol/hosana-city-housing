@@ -31,11 +31,22 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('query');
     const mender = searchParams.get('mender');
     const kebele = searchParams.get('kebele');
+    const id = searchParams.get('id');
 
     // Build query with conditional filters using Neon-compatible syntax
     let result;
-    
-    if (query) {
+
+    if (id) {
+      result = await sql`
+        SELECT id, name, father_name, house_number, mender, kebele,
+               phone_encrypted, email, latitude, longitude, file_path,
+               file_name, notes, created_at, updated_at
+        FROM householders
+        WHERE id = ${id}
+          AND is_deleted = FALSE
+          ${user.role === 'MENDER_STAFF' && user.assigned_mender ? sql`AND mender = ${user.assigned_mender}` : sql``}
+      `;
+    } else if (query) {
       // Search by name or house number
       result = await sql`
         SELECT id, name, father_name, house_number, mender, kebele, 

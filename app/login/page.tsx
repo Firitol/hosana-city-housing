@@ -41,9 +41,9 @@ export default function LoginPage() {
       }
 
       login(data.token, data.user);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
