@@ -1,3 +1,7 @@
+// ✅ Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
@@ -6,10 +10,12 @@ export async function POST(request: NextRequest) {
   try {
     const { username, email, password, fullName, role, assignedMender } = await request.json();
 
+    // Validate required fields
     if (!username || !email || !password || !fullName || !role) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
     }
 
+    // Security: Limit self-registration roles
     const allowedRoles = ['MENDER_STAFF', 'AUDITOR'];
     if (!allowedRoles.includes(role)) {
       return NextResponse.json({ 
@@ -17,8 +23,9 @@ export async function POST(request: NextRequest) {
       }, { status: 403 });
     }
 
+    // Check if username or email already exists (case-insensitive)
     const existing = await sql`
-      SELECT id FROM users WHERE username = ${username} OR email = ${email}
+      SELECT id FROM users WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${email})
     `;
 
     if (existing.length > 0) {
@@ -27,12 +34,15 @@ export async function POST(request: NextRequest) {
       }, { status: 409 });
     }
 
+    // Hash password
     const passwordHash = await hashPassword(password);
 
-    export const dynamic = 'force-dynamic';
-    export const revalidate = 0;
+    // Get client IP
+    const forwarded = request.headers.get('x-forwarded-for');
+    const ip = request.ip;
     const registrationIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
 
+    // Create user with PENDING status
     const result = await sql`
       INSERT INTO users (
         username, email, password_hash, full_name, role, 
