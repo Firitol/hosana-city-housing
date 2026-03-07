@@ -16,15 +16,17 @@ export async function POST(request: NextRequest, { params }: { params: { userId:
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
+    const { is_active } = await request.json();
+
     await sql`
       UPDATE users 
-      SET approval_status = 'rejected', is_active = FALSE 
+      SET is_active = ${is_active}
       WHERE id = ${params.userId}
     `;
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Reject error:', error);
+    console.error('Toggle error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
