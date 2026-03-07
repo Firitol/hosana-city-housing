@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useTranslation } from '@/lib/i18n';
 import { useRouter } from 'next/navigation';
-import { Users, MapPin, FileText, LogOut, Plus, Search } from 'lucide-react';
+import { Users, MapPin, LogOut, Plus, Search } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -129,7 +129,7 @@ export default function DashboardPage() {
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
-              href="/householder"
+              href="/search"
               className="flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
             >
               <Users className="w-6 h-6 text-blue-600" />
@@ -140,7 +140,7 @@ export default function DashboardPage() {
             </Link>
 
             <Link
-              href="/householder/new"
+              href="/search"
               className="flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition"
             >
               <Plus className="w-6 h-6 text-green-600" />
@@ -169,16 +169,21 @@ export default function DashboardPage() {
               <div>
                 <p className="font-medium text-gray-800">Search</p>
                 <p className="text-sm text-gray-500">Find Records</p>
-                {user?.role === 'SUPER_ADMIN' && ( <Link href="/admin/users"className="flex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition">
-    <Users className="w-6 h-6 text-purple-600" />
-    <div>
-      <p className="font-medium text-gray-800">User Management</p>
-      <p className="text-sm text-gray-500">Approve & Manage Users</p>
-    </div>
-  </Link>
-)}
               </div>
             </Link>
+
+            {user?.role === 'SUPER_ADMIN' && (
+              <Link
+                href="/admin/users"
+                className="flex items-center gap-3 p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition"
+              >
+                <Users className="w-6 h-6 text-indigo-600" />
+                <div>
+                  <p className="font-medium text-gray-800">User Management</p>
+                  <p className="text-sm text-gray-500">Approve & Manage Users</p>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
       </main>
