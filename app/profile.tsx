@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api } from '@/lib/api';
 import {
   ArrowLeft,
   MapPin,
@@ -55,7 +54,7 @@ export default function ProfilePage() {
   const fetchProfile = async (id: string) => {
     try {
       const token = localStorage.getItem('hosana_token');
-      const response = await fetch(`/api/householders?id=${id}`, {
+      const response = await fetch(`/api/householder?id=${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -68,9 +67,9 @@ export default function ProfilePage() {
       const data = await response.json();
       // If API returns array, take first item
       setHouseholder(Array.isArray(data) ? data[0] : data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Fetch error:', err);
-      setError(err.message || 'Failed to load profile');
+      setError(err instanceof Error ? err.message : 'Failed to load profile');
     } finally {
       setLoading(false);
     }
@@ -111,7 +110,7 @@ export default function ProfilePage() {
   };
 
   const handleEdit = () => {
-    router.push(`/householders/${householder?.id}/edit`);
+    router.push('/search');
   };
 
   const copyToClipboard = (text: string, label: string) => {

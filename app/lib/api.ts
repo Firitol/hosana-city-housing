@@ -5,7 +5,7 @@ export async function apiRequest<T>(
   options: {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
     headers?: Record<string, string>;
-    body?: any;
+    body?: unknown;
     requireAuth?: boolean;
   } = {}
 ): Promise<T> {
@@ -67,13 +67,13 @@ export async function apiRequest<T>(
 
 // Convenience methods
 export const api = {
-  get: <T>(endpoint: string, options?: any) => 
+  get: <T>(endpoint: string, options?: Omit<Parameters<typeof apiRequest<T>>[1], "method" | "body">) => 
     apiRequest<T>(endpoint, { ...options, method: 'GET' }),
-  post: <T>(endpoint: string, body: any, options?: any) => 
+  post: <T>(endpoint: string, body: unknown, options?: Omit<Parameters<typeof apiRequest<T>>[1], "method" | "body">) => 
     apiRequest<T>(endpoint, { ...options, method: 'POST', body }),
-  put: <T>(endpoint: string, body: any, options?: any) => 
+  put: <T>(endpoint: string, body: unknown, options?: Omit<Parameters<typeof apiRequest<T>>[1], "method" | "body">) => 
     apiRequest<T>(endpoint, { ...options, method: 'PUT', body }),
-  delete: <T>(endpoint: string, options?: any) => 
+  delete: <T>(endpoint: string, options?: Omit<Parameters<typeof apiRequest<T>>[1], "method" | "body">) => 
     apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
 };
 
