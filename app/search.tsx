@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Filter, X, MapPin, Phone, FileText, Plus, AlertTriangle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, Filter, X, MapPin, Phone, FileText, Plus, AlertTriangle, Upload, Loader2 } from 'lucide-react';
 
 interface Householder {
   id: string;
@@ -24,13 +24,14 @@ const KEBELES = ['All', 'Kebele 01', 'Kebele 02', 'Kebele 03', 'Kebele 04', 'Keb
 
 export default function SearchPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMender, setSelectedMender] = useState('All');
   const [selectedKebele, setSelectedKebele] = useState('All');
   const [householders, setHouseholders] = useState<Householder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -95,6 +96,53 @@ export default function SearchPage() {
     window.location.href = `tel:${phone}`;
   };
 
+
+  const handleCsvUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const token = localStorage.getItem('hosana_token');
+    if (!token) {
+      alert('Please login again');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/householder/upload-csv', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'CSV upload failed');
+      }
+
+      const details = [`Inserted: ${data.inserted}`, `Failed: ${data.failed}`];
+      if (Array.isArray(data.errors) && data.errors.length > 0) {
+        details.push(`Errors: ${data.errors.slice(0, 3).join(' | ')}`);
+      }
+      alert(`CSV upload complete. ${details.join(' | ')}`);
+
+      fetchHouseholders();
+    } catch (error: any) {
+      alert(error.message || 'CSV upload failed');
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      setUploading(false);
+    }
+  };
+
   const handleViewDocument = (filePath?: string) => {
     if (!filePath) {
       alert('No document available');
@@ -108,7 +156,7 @@ export default function SearchPage() {
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <h1 className="text-2xl font-bold text-gray-800">Search Householders</h1>
             <button
               onClick={() => router.push('/registration')}
