@@ -1,10 +1,14 @@
+// ✅ Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 import { verifyPassword, generateToken, checkLoginAttempts, recordLoginAttempt } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
-  export const dynamic = 'force-dynamic';
-  export const revalidate = 0;
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = request.ip;
   const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
 
   try {
@@ -34,12 +38,14 @@ export async function POST(request: NextRequest) {
         lockedUntil: loginCheck.lockedUntil 
       }, { status: 423 });
     }
-// To this (case-insensitive):
-     const users = await sql`
-     SELECT id, username, password_hash, role, assigned_mender, full_name, is_active, approval_status 
-     FROM users 
+
+    // Case-insensitive username lookup
+    const users = await sql`
+      SELECT id, username, password_hash, role, assigned_mender, full_name, is_active, approval_status 
+      FROM users 
       WHERE LOWER(username) = LOWER(${username})
-     `;
+    `;
+
     console.log('User query result:', users);
 
     if (users.length === 0) {
