@@ -6,8 +6,8 @@ import { encrypt, decrypt } from '@/lib/utils';
 
 // GET: Fetch householders with filters
 export async function GET(request: NextRequest) {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const ip = request.ip;
+   export const dynamic = 'force-dynamic';
+   export const revalidate = 0;
   const clientIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
