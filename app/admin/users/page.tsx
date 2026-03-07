@@ -1,13 +1,12 @@
 'use client';
 
-// ✅ Force dynamic rendering for this page
+// ✅ ONLY this export for pages - NO revalidate!
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Users, Check, X, Trash2, Search, Filter, Shield, Building, Mail, Calendar, UserCheck, UserX } from 'lucide-react';
+import { Users, Check, X, Search, Filter, Shield, Building, Mail, Calendar, UserCheck, UserX, Home } from 'lucide-react';
 import Link from 'next/link';
 
 interface User {
@@ -51,9 +50,7 @@ export default function AdminUsersPage() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
-      }
+      if (!response.ok) throw new Error('Failed to fetch users');
       
       const data = await response.json();
       setUsers(data);
@@ -73,9 +70,7 @@ export default function AdminUsersPage() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to approve user');
-      }
+      if (!response.ok) throw new Error('Failed to approve user');
       
       setMessage('User approved successfully!');
       fetchUsers();
@@ -95,9 +90,7 @@ export default function AdminUsersPage() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to reject user');
-      }
+      if (!response.ok) throw new Error('Failed to reject user');
       
       setMessage('User rejected');
       fetchUsers();
@@ -119,7 +112,7 @@ export default function AdminUsersPage() {
 
   if (isLoading || !isAuthenticated || user?.role !== 'SUPER_ADMIN') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -127,13 +120,15 @@ export default function AdminUsersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
-              <p className="text-sm text-gray-500">Manage user accounts and approvals</p>
+            <div className="flex items-center gap-3">
+              <Home className="w-6 h-6 text-blue-600" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
+                <p className="text-sm text-gray-500">Manage user accounts and approvals</p>
+              </div>
             </div>
             <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 font-medium">
               ← Back to Dashboard
@@ -142,9 +137,7 @@ export default function AdminUsersPage() {
         </div>
       </header>
 
-      {/* Stats */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Message */}
         {message && (
           <div className={`mb-6 p-4 rounded-lg ${
             message.includes('success') || message.includes('approved') 
@@ -180,7 +173,6 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-4">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-64">
@@ -211,7 +203,6 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* Users Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -227,13 +218,9 @@ export default function AdminUsersPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading...</td>
-                  </tr>
+                  <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading...</td></tr>
                 ) : filteredUsers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No users found</td>
-                  </tr>
+                  <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">No users found</td></tr>
                 ) : (
                   filteredUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
@@ -247,83 +234,4 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           user.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-700' :
-                          user.role === 'MAYOR' ? 'bg-purple-100 text-purple-700' :
-                          user.role === 'MENDER_STAFF' ? 'bg-blue-100 text-blue-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {user.assigned_mender || '-'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            user.approval_status === 'approved' ? 'bg-green-100 text-green-700' :
-                            user.approval_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {user.approval_status}
-                          </span>
-                          {user.is_active && (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                              Active
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {new Date(user.registration_date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          {user.approval_status === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleApprove(user.id)}
-                                className="p-1 text-green-600 hover:bg-green-50 rounded"
-                                title="Approve"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleReject(user.id)}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded"
-                                title="Reject"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                          {user.approval_status === 'approved' && (
-                            <button
-                              onClick={() => handleReject(user.id)}
-                              className="p-1 text-orange-600 hover:bg-orange-50 rounded"
-                              title="Deactivate"
-                            >
-                              <UserX className="w-4 h-4" />
-                            </button>
-                          )}
-                          {user.approval_status === 'rejected' && (
-                            <button
-                              onClick={() => handleApprove(user.id)}
-                              className="p-1 text-green-600 hover:bg-green-50 rounded"
-                              title="Reactivate"
-                            >
-                              <UserCheck className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
+                          user.role ===
