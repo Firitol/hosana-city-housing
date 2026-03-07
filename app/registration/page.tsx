@@ -42,7 +42,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -69,8 +69,8 @@ export default function RegisterPage() {
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center">
           <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Registration Successful!</h1>
-          <p className="text-gray-600 mb-4">Your account is pending administrator approval.</p>
-          <p className="text-gray-500 text-sm mb-6">You will be able to login once approved.</p>
+          <p className="text-gray-600 mb-4">Your account has been created and is active.</p>
+          <p className="text-gray-500 text-sm mb-6">You can login right away using your new credentials.</p>
           <p className="text-blue-600 font-medium">Redirecting to login...</p>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function RegisterPage() {
 
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg mb-6 text-sm">
           <AlertCircle className="w-4 h-4 inline mr-2" />
-          <strong>Note:</strong> All new accounts require administrator approval.
+          <strong>Note:</strong> New accounts are activated immediately.
         </div>
 
         {error && (
