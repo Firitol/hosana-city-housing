@@ -43,7 +43,7 @@ export default function SearchPage() {
   const fetchHouseholders = async () => {
     try {
       const token = localStorage.getItem('hosana_token');
-      let url = '/api/householders?';
+      let url = '/api/householder?';
       
       if (searchQuery) url += `query=${encodeURIComponent(searchQuery)}&`;
       if (selectedMender !== 'All') url += `mender=${encodeURIComponent(selectedMender)}&`;
@@ -111,7 +111,7 @@ export default function SearchPage() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-800">Search Householders</h1>
             <button
-              onClick={() => router.push('/householders/new')}
+              onClick={() => router.push('/registration')}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
             >
               <Plus className="w-4 h-4" />
