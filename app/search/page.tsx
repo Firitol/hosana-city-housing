@@ -18,3 +18,4 @@ export default function SearchRoutePage() {
     </Suspense>
   );
 }
+export { default } from '../search';
