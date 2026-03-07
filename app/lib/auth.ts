@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import bcryptjs from 'bcryptjs';
 import { sql } from './db';
 
 // Get config from environment with fallbacks
@@ -14,13 +14,13 @@ export interface UserPayload {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(12);
-  return bcrypt.hash(password, salt);
+  const salt = await bcryptjs.genSalt(12);
+  return bcryptjs.hash(password, salt);
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   try {
-    const result = await bcrypt.compare(password, hash);
+    const result = await bcryptjs.compare(password, hash);
     return result;
   } catch (error) {
     console.error('Password verification error:', error);
