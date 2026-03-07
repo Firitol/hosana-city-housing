@@ -133,8 +133,8 @@ export default function SearchPage() {
       alert(`CSV upload complete. ${details.join(' | ')}`);
 
       fetchHouseholders();
-    } catch (error: unknown) {
-      alert(error instanceof Error ? error.message : 'CSV upload failed');
+    } catch (error: any) {
+      alert(error.message || 'CSV upload failed');
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -183,6 +183,13 @@ export default function SearchPage() {
                 <span className="hidden sm:inline">Add New</span>
               </button>
             </div>
+            <button
+              onClick={() => router.push('/registration')}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add New</span>
+            </button>
           </div>
 
           {/* Search Bar */}
