@@ -42,21 +42,21 @@ export async function POST(request: NextRequest) {
     const ip = request.ip;
     const registrationIp = forwarded?.split(',')[0]?.trim() || ip || 'unknown';
 
-    // Create user with PENDING status
+    // Create user with active status so they can login immediately
     const result = await sql`
       INSERT INTO users (
         username, email, password_hash, full_name, role, 
         assigned_mender, approval_status, registration_ip, is_active
       ) VALUES (
         ${username}, ${email}, ${passwordHash}, ${fullName}, ${role},
-        ${assignedMender || null}, 'pending', ${registrationIp}, FALSE
+        ${assignedMender || null}, 'approved', ${registrationIp}, TRUE
       )
       RETURNING id, username, email, full_name, role, assigned_mender, approval_status
     `;
 
     return NextResponse.json({
       success: true,
-      message: 'Registration successful! Your account is pending admin approval.',
+      message: 'Registration successful! You can now login.',
       user: result[0]
     });
 
