@@ -1,12 +1,11 @@
 'use client';
 
-// ✅ ONLY this export for pages - NO revalidate!
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Users, Check, X, Search, Filter, Shield, Building, Mail, Calendar, UserCheck, UserX, Home } from 'lucide-react';
+import { Users, Check, X, Search, Filter, Home } from 'lucide-react';
 import Link from 'next/link';
 
 interface User {
@@ -49,9 +48,7 @@ export default function AdminUsersPage() {
       const response = await fetch('/api/admin/users', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
       if (!response.ok) throw new Error('Failed to fetch users');
-      
       const data = await response.json();
       setUsers(data);
     } catch (error) {
@@ -69,9 +66,7 @@ export default function AdminUsersPage() {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
       if (!response.ok) throw new Error('Failed to approve user');
-      
       setMessage('User approved successfully!');
       fetchUsers();
       setTimeout(() => setMessage(''), 3000);
@@ -89,9 +84,7 @@ export default function AdminUsersPage() {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
       if (!response.ok) throw new Error('Failed to reject user');
-      
       setMessage('User rejected');
       fetchUsers();
       setTimeout(() => setMessage(''), 3000);
@@ -139,11 +132,7 @@ export default function AdminUsersPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.includes('success') || message.includes('approved') 
-              ? 'bg-green-50 text-green-700' 
-              : 'bg-red-50 text-red-700'
-          }`}>
+          <div className={'mb-6 p-4 rounded-lg ' + (message.includes('success') || message.includes('approved') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700')}>
             {message}
           </div>
         )}
@@ -155,21 +144,15 @@ export default function AdminUsersPage() {
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <p className="text-sm text-gray-500 mb-1">Pending Approval</p>
-            <p className="text-3xl font-bold text-yellow-600">
-              {users.filter(u => u.approval_status === 'pending').length}
-            </p>
+            <p className="text-3xl font-bold text-yellow-600">{users.filter(u => u.approval_status === 'pending').length}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <p className="text-sm text-gray-500 mb-1">Approved</p>
-            <p className="text-3xl font-bold text-green-600">
-              {users.filter(u => u.approval_status === 'approved').length}
-            </p>
+            <p className="text-3xl font-bold text-green-600">{users.filter(u => u.approval_status === 'approved').length}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <p className="text-sm text-gray-500 mb-1">Active Users</p>
-            <p className="text-3xl font-bold text-blue-600">
-              {users.filter(u => u.is_active).length}
-            </p>
+            <p className="text-3xl font-bold text-blue-600">{users.filter(u => u.is_active).length}</p>
           </div>
         </div>
 
@@ -232,6 +215,52 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-700' :
-                          user.role ===
+                        <span className={'px-2 py-1 rounded-full text-xs font-medium ' + (user.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-700' : user.role === 'MAYOR' ? 'bg-purple-100 text-purple-700' : user.role === 'MENDER_STAFF' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700')}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{user.assigned_mender || '-'}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className={'px-2 py-1 rounded-full text-xs font-medium ' + (user.approval_status === 'approved' ? 'bg-green-100 text-green-700' : user.approval_status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700')}>
+                            {user.approval_status}
+                          </span>
+                          {user.is_active && <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Active</span>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{new Date(user.registration_date).toLocaleDateString()}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          {user.approval_status === 'pending' && (
+                            <>
+                              <button onClick={() => handleApprove(user.id)} className="p-1 text-green-600 hover:bg-green-50 rounded" title="Approve">
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleReject(user.id)} className="p-1 text-red-600 hover:bg-red-50 rounded" title="Reject">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {user.approval_status === 'approved' && (
+                            <button onClick={() => handleReject(user.id)} className="p-1 text-orange-600 hover:bg-orange-50 rounded" title="Deactivate">
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                          {user.approval_status === 'rejected' && (
+                            <button onClick={() => handleApprove(user.id)} className="p-1 text-green-600 hover:bg-green-50 rounded" title="Reactivate">
+                              <Check className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
