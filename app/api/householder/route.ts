@@ -33,53 +33,62 @@ export async function GET(request: NextRequest) {
     const kebele = searchParams.get('kebele');
     const id = searchParams.get('id');
 
-    // Build query with conditional filters using Neon-compatible syntax
     let result;
 
+    // Fetch by ID
     if (id) {
       result = await sql`
         SELECT id, name, father_name, house_number, mender, kebele,
-               phone_encrypted, email, latitude, longitude, file_path,
-               file_name, notes, created_at, updated_at
+               phone_encrypted, email, latitude, longitude,
+               file_path, file_name, notes, created_at, updated_at
         FROM householders
         WHERE id = ${id}
-          AND is_deleted = FALSE
-          ${user.role === 'MENDER_STAFF' && user.assigned_mender ? sql`AND mender = ${user.assigned_mender}` : sql``}
-      `;
-    } else if (query) {
-      // Search by name or house number
-      result = await sql`
-        SELECT id, name, father_name, house_number, mender, kebele, 
-               phone_encrypted, email, latitude, longitude, file_path, 
-               file_name, notes, created_at, updated_at
-        FROM householders
-        WHERE is_deleted = FALSE 
-          AND (name ILIKE ${'%' + query + '%'} OR house_number ILIKE ${'%' + query + '%'})
-          ${mender ? sql`AND mender = ${mender}` : sql``}
-          ${kebele ? sql`AND kebele = ${kebele}` : sql``}
-          ${user.role === 'MENDER_STAFF' && user.assigned_mender ? sql`AND mender = ${user.assigned_mender}` : sql``}
-        ORDER BY created_at DESC
+        AND is_deleted = FALSE
+        ${
+          user.role === 'MENDER_STAFF' && user.assigned_mender
+            ? sql`AND mender = ${user.assigned_mender}`
+            : sql``
+        }
       `;
     } else {
-      // No search query - just filters
+      // Dynamic condition builder
+      const conditions = [sql`is_deleted = FALSE`];
+
+      if (query) {
+        conditions.push(
+          sql`(name ILIKE ${'%' + query + '%'} OR house_number ILIKE ${
+            '%' + query + '%'
+          })`
+        );
+      }
+
+      if (mender) {
+        conditions.push(sql`mender = ${mender}`);
+      }
+
+      if (kebele) {
+        conditions.push(sql`kebele = ${kebele}`);
+      }
+
+      if (user.role === 'MENDER_STAFF' && user.assigned_mender) {
+        conditions.push(sql`mender = ${user.assigned_mender}`);
+      }
+
       result = await sql`
-        SELECT id, name, father_name, house_number, mender, kebele, 
-               phone_encrypted, email, latitude, longitude, file_path, 
-               file_name, notes, created_at, updated_at
+        SELECT id, name, father_name, house_number, mender, kebele,
+               phone_encrypted, email, latitude, longitude,
+               file_path, file_name, notes, created_at, updated_at
         FROM householders
-        WHERE is_deleted = FALSE 
-          ${mender ? sql`AND mender = ${mender}` : sql``}
-          ${kebele ? sql`AND kebele = ${kebele}` : sql``}
-          ${user.role === 'MENDER_STAFF' && user.assigned_mender ? sql`AND mender = ${user.assigned_mender}` : sql``}
+        WHERE ${sql.join(conditions, sql` AND `)}
         ORDER BY created_at DESC
       `;
     }
 
-    // Decrypt phone numbers for authorized users
+    // Decrypt phone numbers
     const householders = result.map((h: any) => ({
       ...h,
       phone: h.phone_encrypted ? decrypt(h.phone_encrypted) : null,
-      phone_encrypted: undefined
+      phone_encrypted: undefined,
     }));
 
     // Audit log
@@ -89,13 +98,16 @@ export async function GET(request: NextRequest) {
       action: 'SEARCH_HOUSEHOLDERS',
       resourceType: 'HOUSEHOLDER',
       ipAddress: clientIp,
-      userAgent
+      userAgent,
     });
 
     return NextResponse.json(householders);
   } catch (error) {
     console.error('Error fetching householders:', error);
-    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch data' },
+      { status: 500 }
+    );
   }
 }
 
@@ -118,13 +130,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Check permissions
+    // Permission check
     if (user.role === 'AUDITOR') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
     }
 
     // Parse form data
     const formData = await request.formData();
+
     const name = formData.get('name') as string;
     const fatherName = formData.get('father_name') as string;
     const houseNumber = formData.get('house_number') as string;
@@ -137,46 +153,60 @@ export async function POST(request: NextRequest) {
     const notes = formData.get('notes') as string;
     const file = formData.get('document') as File;
 
-    // Validate mender permission for staff
+    // Staff restriction
     if (user.role === 'MENDER_STAFF' && user.assigned_mender !== mender) {
-      return NextResponse.json({ 
-        error: 'You can only create records for your assigned mender' 
-      }, { status: 403 });
+      return NextResponse.json(
+        { error: 'You can only create records for your assigned mender' },
+        { status: 403 }
+      );
     }
 
-    // Encrypt sensitive data
+    // Encrypt phone
     const phoneEncrypted = phone ? encrypt(phone) : null;
 
-    // Handle file upload metadata
+    // File metadata
     let filePath = '';
     let fileName = '';
     let fileSize = 0;
+
     if (file && file.size > 0) {
       fileName = file.name;
       fileSize = file.size;
       filePath = `/uploads/${Date.now()}-${file.name}`;
     }
 
-    // Insert new record with parameterized query
+    // Insert into DB
     const result = await sql`
       INSERT INTO householders (
-        name, father_name, house_number, mender, kebele, 
-        phone_encrypted, email, latitude, longitude, notes,
-        file_path, file_name, file_size, created_by
-      ) VALUES (
-        ${name}, 
-        ${fatherName || null}, 
-        ${houseNumber}, 
-        ${mender}, 
+        name,
+        father_name,
+        house_number,
+        mender,
+        kebele,
+        phone_encrypted,
+        email,
+        latitude,
+        longitude,
+        notes,
+        file_path,
+        file_name,
+        file_size,
+        created_by
+      )
+      VALUES (
+        ${name},
+        ${fatherName || null},
+        ${houseNumber},
+        ${mender},
         ${kebele},
-        ${phoneEncrypted}, 
-        ${email || null}, 
-        ${parseFloat(latitude) || null}, 
-        ${parseFloat(longitude) || null}, 
+        ${phoneEncrypted},
+        ${email || null},
+        ${latitude ? parseFloat(latitude) : null},
+        ${longitude ? parseFloat(longitude) : null},
         ${notes || null},
-        ${filePath}, 
-        ${fileName}, 
-        ${fileSize}, 
+        ${filePath},
+        ${fileName},
+        ${fileSize},
         ${user.id}
       )
       RETURNING *
@@ -189,26 +219,26 @@ export async function POST(request: NextRequest) {
       action: 'CREATE_HOUSEHOLDER',
       resourceType: 'HOUSEHOLDER',
       resourceId: result[0].id,
-      newValues: { 
-        name, 
-        house_number: houseNumber, 
-        mender, 
-        kebele 
+      newValues: {
+        name,
+        house_number: houseNumber,
+        mender,
+        kebele,
       },
       ipAddress: clientIp,
-      userAgent
+      userAgent,
     });
 
-    // ✅ CORRECT SYNTAX: key: value pair in object literal
-    return NextResponse.json({ 
-      success: true, 
-      data: result[0] 
+    return NextResponse.json({
+      success: true,
+      data: result[0],
     });
-    
   } catch (error) {
     console.error('Error creating householder:', error);
-    return NextResponse.json({ 
-      error: 'Failed to create record' 
-    }, { status: 500 });
+
+    return NextResponse.json(
+      { error: 'Failed to create record' },
+      { status: 500 }
+    );
   }
 }
