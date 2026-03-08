@@ -20,4 +20,3 @@ export default function MapRoutePage() {
     </Suspense>
   );
 }
-export { default } from '../map';
