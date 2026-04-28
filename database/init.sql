@@ -12,6 +12,8 @@ CREATE TABLE users (
     assigned_mender VARCHAR(50),
     phone VARCHAR(20),
     is_active BOOLEAN DEFAULT TRUE,
+    approval_status VARCHAR(20) DEFAULT 'approved' CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+    registration_ip INET,
     last_login TIMESTAMP,
     failed_login_attempts INTEGER DEFAULT 0,
     locked_until TIMESTAMP,
